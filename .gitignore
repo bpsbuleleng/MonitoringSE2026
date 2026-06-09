@@ -1,0 +1,8 @@
+# Publikasikan HANYA file situs. Abaikan semua input build & data mentah
+# (SQLPad.xlsx, *.geojson, _build/, service_account.json, dll) agar tidak
+# pernah ter-upload ke GitHub publik.
+*
+!.gitignore
+!index.html
+!README.md
+!Publish_ke_GitHub.bat
