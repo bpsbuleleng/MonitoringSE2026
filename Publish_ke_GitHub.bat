@@ -8,22 +8,20 @@ echo ============================================================
 echo   PUBLISH DASHBOARD SE2026 KE GITHUB PAGES
 echo ============================================================
 echo.
-echo [1/3] Membangun index.html dari SQLPad.xlsx ...
+echo [1/3] Menyiapkan koneksi ^& menyelaraskan dengan GitHub ...
+%PY% "_build\ensure_git.py" prepare
+if errorlevel 1 goto err
+echo.
+
+echo [2/3] Membangun index.html dari SQLPad.xlsx ...
 %PY% "_build\gen_data.py"
 if errorlevel 1 goto err
 %PY% "_build\assemble.py"
 if errorlevel 1 goto err
 echo.
 
-echo [2/3] Memastikan koneksi GitHub (auto-perbaiki bila pindah komputer) ...
-%PY% "_build\ensure_git.py"
-if errorlevel 1 goto err
-echo.
-
 echo [3/3] Commit ^& Push ke GitHub ...
-git add -A
-git commit -m "Update data %date% %time%"
-git push
+%PY% "_build\ensure_git.py" commit "Update data %date% %time%"
 if errorlevel 1 goto err
 
 echo.
