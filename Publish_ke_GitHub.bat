@@ -15,12 +15,14 @@ if errorlevel 1 goto err
 if errorlevel 1 goto err
 echo.
 
-echo [2/3] Commit perubahan ...
+echo [2/3] Memastikan koneksi GitHub (auto-perbaiki bila pindah komputer) ...
+%PY% "_build\ensure_git.py"
+if errorlevel 1 goto err
+echo.
+
+echo [3/3] Commit ^& Push ke GitHub ...
 git add -A
 git commit -m "Update data %date% %time%"
-
-echo.
-echo [3/3] Push ke GitHub ...
 git push
 if errorlevel 1 goto err
 
