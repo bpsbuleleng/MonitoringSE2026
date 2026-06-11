@@ -93,5 +93,11 @@ setup** sehingga tidak perlu mengedit kode sama sekali. Default bawaan = Bulelen
   masalah — saat dijalankan, koneksi ke GitHub **dibuat ulang otomatis** tanpa
   menimpa file lokal (lihat `_build/ensure_git.py`). Cukup copy folder lengkap +
   login GitHub sekali.
+- **Publish dari >1 komputer:** sebelum build, riwayat dari GitHub **digabung
+  otomatis** ke lokal (tanpa kehilangan hari yang hanya ada di salah satu) dan
+  commit dibuat berbasis remote terbaru, jadi `git push` tidak lagi ditolak
+  *"fetch first"*. Bila tetap ada yang push barusan, push diulang otomatis
+  setelah rebase. **Catatan:** kalau `Auto_Publish_Standby.bat` sedang berjalan,
+  **restart** dulu agar logika sinkronisasi baru ini terpakai.
 - `config.json`, `sqlpad_login.json`, dan semua file data **tidak** diunggah ke
   GitHub (diatur `.gitignore`) — aman tetap di lokal.
