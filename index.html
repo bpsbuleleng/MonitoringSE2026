@@ -1010,8 +1010,16 @@ const TARGET_START=new Date(2026,5,8), TARGET_END=new Date(2026,7,31);
 function targetInfo(){
   const MS=86400000;
   const total=Math.round((TARGET_END-TARGET_START)/MS)+1;     // 85 hari
-  const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  let day=Math.floor((today-TARGET_START)/MS)+1;
+  // Hari ke- mengikuti TANGGAL DATA (inserted_at) = record histori terakhir,
+  // bukan tanggal browser, supaya konsisten dgn "Data per" & target.
+  const h=(D.history||[]);
+  let day;
+  if(h.length && h[h.length-1].day!=null){
+    day=h[h.length-1].day;
+  }else{
+    const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    day=Math.floor((today-TARGET_START)/MS)+1;
+  }
   day=Math.max(0,Math.min(day,total));
   return {total,day,pct: total>0? Math.min(100,day/total*100):0};
 }
