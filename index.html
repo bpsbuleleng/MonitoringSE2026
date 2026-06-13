@@ -1217,7 +1217,7 @@ function renderTarget(rows){
   const bn=document.getElementById('target-banner');
   bn.className='tbanner '+(ok?'ok':'bad');
   bn.innerHTML=
-    `<div class="tb-item"><span class="k">Periode 8 Jun – 16 Ags 2026</span><span class="v">Hari ke-${ti.day} / ${ti.total}</span></div>`+
+    `<div class="tb-item"><span class="k">Mulai 8 Jun 2026</span><span class="v">Hari ke-${ti.day} / ${ti.total}</span></div>`+
     `<div class="tb-item"><span class="k">Target hari ini</span><span class="v">${pf(ti.pct)}%</span></div>`+
     `<div class="tb-item"><span class="k">Realisasi (sesuai filter)</span><span class="v">${pf(real)}%</span></div>`+
     `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${ok?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${pf(gap)} poin</span></div>`+
