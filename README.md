@@ -15,6 +15,22 @@ Seluruh proses dilakukan **di komputer lokal**, lalu hasilnya di-_push_ ke GitHu
    Script akan: membangun ulang `index.html` dari Excel → `commit` → `push`.
 3. GitHub Pages otomatis menyegarkan situs dalam ~1–2 menit.
 
+## Mengubah alokasi petugas
+
+Bila ada perubahan penugasan (PPL/PML/PJ Organik per sub-SLS):
+
+1. Dobel-klik **`Edit_Alokasi_Petugas.bat`** → form terbuka di `http://localhost:8772/`.
+2. **Filter** dulu (kecamatan / desa / kotak cari) untuk mempersempit baris.
+3. Edit langsung di tabel, atau pakai **Ganti Massal** (mis. semua sub-SLS milik
+   "PPL A" → "PPL B"). Baris yang berubah ditandai.
+4. Klik **💾 Simpan Perubahan** → ditulis ke sheet **Master Wilayah** di
+   `SQLPad.xlsx` (sheet & kolom lain tidak disentuh).
+5. Bila `Auto_Publish_Standby.bat` sedang berjalan, dashboard otomatis ter-update
+   beberapa detik kemudian; bila tidak, jalankan `Publish_ke_GitHub.bat`.
+
+> Ini mengubah **pemetaan nama yang dipakai dashboard** (lokal), bukan penugasan
+> di aplikasi survei sumber. Angka status tetap mengikuti data query per sub-SLS.
+
 ## Catatan
 
 - `index.html` bersifat **statis & mandiri** (data, geometri peta, dan Leaflet
