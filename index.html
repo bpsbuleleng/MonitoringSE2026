@@ -1241,7 +1241,10 @@ function trendBreakdown(){
 }
 function aggPts(ix){return TREND_DETAIL.snaps.map(s=>{let o=0,t=0;for(const i of ix){o+=s.open[i]||0;t+=s.total[i]||0;}return {day:s.day,date:s.date,done:t-o,total:t,progres:t?(t-o)/t*100:0};});}
 function trendData(){
-  if(TREND_DETAIL&&TREND_DETAIL.ki){
+  // Tanpa filter -> pakai histori agregat (history.json) yg rentang tanggalnya terpanjang.
+  // Dengan filter -> agregasi dari history_rows per-baris (ikut filter; hanya tersedia
+  // sejak per-baris mulai direkam, jadi bisa lebih pendek).
+  if(TREND_DETAIL&&TREND_DETAIL.ki&&anyFilterActive()){
     const ki=TREND_DETAIL.ki, ix=[];
     filteredRows().forEach(r=>{const i=ki[r[idx.idsls]+'-'+r[idx.kdsub]];if(i!==undefined)ix.push(i);});
     return aggPts(ix);
