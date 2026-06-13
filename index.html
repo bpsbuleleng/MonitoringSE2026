@@ -766,6 +766,16 @@ tbody tr:hover{background:#f8fafc}
 tbody tr.zero-open{}
 tfoot td{padding:8px 9px;text-align:right;font-weight:800;background:#f1f5f9;border-top:2px solid var(--line);position:sticky;bottom:0}
 tfoot td.txt{text-align:left}
+/* freeze kolom nama (kolom pertama) saat geser horizontal — nyaman di HP & PC */
+thead th.freeze{left:0;z-index:5}
+tbody td.freeze{position:sticky;left:0;z-index:3;background:#fff;white-space:normal;min-width:120px;max-width:200px;box-shadow:1px 0 0 var(--line)}
+tbody tr:hover td.freeze{background:#f8fafc}
+tfoot td.freeze{left:0;z-index:4;box-shadow:1px 0 0 var(--line)}
+@media(max-width:640px){
+  table{font-size:11.5px}
+  thead th,tbody td,tfoot td{padding:6px 7px}
+  tbody td.freeze{min-width:104px;max-width:140px}
+}
 .bar{height:7px;background:#e2e8f0;border-radius:5px;overflow:hidden;min-width:60px;display:inline-block;vertical-align:middle}
 .bar>span{display:block;height:100%;background:var(--ok)}
 .muted{color:var(--muted)}
@@ -1445,11 +1455,16 @@ function renderLegend(breaks,cols,metric){
 /* ============================================================= REKAP TABLES */
 const DIMS=[
   {key:'kec',  lbl:'Kecamatan', field:'idkec',  name:r=>r[idx.nmkec], col:'Kecamatan'},
-  {key:'desa', lbl:'Desa',      field:'iddesa', name:r=>r[idx.nmdesa]+' ('+r[idx.nmkec]+')', col:'Desa (Kecamatan)'},
-  {key:'sls',  lbl:'SLS',       field:'idsls',  name:r=>r[idx.nmsls]+' · '+r[idx.nmdesa], col:'SLS · Desa'},
-  {key:'sub',  lbl:'Sub-SLS',   field:null,     name:r=>r[idx.nmsls]+' [sub '+r[idx.kdsub]+'] · '+r[idx.nmdesa], col:'Sub-SLS'},
-  {key:'ppl',  lbl:'PPL (Pencacah)', field:'ppl', name:r=>r[idx.ppl], col:'PPL / Pencacah'},
-  {key:'pml',  lbl:'PML (Pengawas)', field:'pml', name:r=>r[idx.pml], col:'PML / Pengawas'},
+  {key:'desa', lbl:'Desa',      field:'iddesa', name:r=>r[idx.nmdesa], col:'Desa',
+    ctx:[{l:'Kecamatan',f:r=>r[idx.nmkec]}]},
+  {key:'sls',  lbl:'SLS',       field:'idsls',  name:r=>r[idx.nmsls], col:'SLS',
+    ctx:[{l:'Desa',f:r=>r[idx.nmdesa]},{l:'Kecamatan',f:r=>r[idx.nmkec]}]},
+  {key:'sub',  lbl:'Sub-SLS',   field:null,     name:r=>r[idx.nmsls]+' [sub '+r[idx.kdsub]+']', col:'Sub-SLS',
+    ctx:[{l:'Desa',f:r=>r[idx.nmdesa]},{l:'Kecamatan',f:r=>r[idx.nmkec]}]},
+  {key:'ppl',  lbl:'PPL (Pencacah)', field:'ppl', name:r=>r[idx.ppl], col:'PPL / Pencacah',
+    ctx:[{l:'PML',f:r=>r[idx.pml]},{l:'PJ Organik',f:r=>r[idx.pj]},{l:'Kecamatan',f:r=>r[idx.nmkec]}]},
+  {key:'pml',  lbl:'PML (Pengawas)', field:'pml', name:r=>r[idx.pml], col:'PML / Pengawas',
+    ctx:[{l:'PJ Organik',f:r=>r[idx.pj]},{l:'Kecamatan',f:r=>r[idx.nmkec]}]},
   {key:'pj',   lbl:'PJ Organik', field:'pj',    name:r=>r[idx.pj], col:'PJ Organik'},
 ];
 let curDim='kec', sortKey='total', sortDir=-1, tableData=[], tableQ='';
@@ -1463,44 +1478,54 @@ function currentDim(){return DIMS.find(d=>d.key===curDim);}
 
 function computeTable(rows){
   const dim=currentDim();
-  let groups;
-  if(dim.key==='sub'){
-    groups={};
-    rows.forEach(r=>{
-      const k=r[idx.idsls]+'-'+r[idx.kdsub];
-      if(!groups[k]){groups[k]=blank();groups[k].key=k;groups[k].label=dim.name(r);}
-      add(groups[k],r);
-    });
-  }else{
-    groups=groupBy(rows,dim.field,dim.name);
-  }
-  return Object.values(groups);
+  const ctx=dim.ctx||[];
+  const keyFn = dim.key==='sub' ? (r=>r[idx.idsls]+'-'+r[idx.kdsub]) : (r=>r[idx[dim.field]]);
+  const groups={};
+  rows.forEach(r=>{
+    const k=keyFn(r);
+    if(k===''||k==null) return;
+    if(!groups[k]){groups[k]=blank();groups[k].key=k;groups[k].label=dim.name(r);groups[k]._cx=ctx.map(()=>new Set());}
+    add(groups[k],r);
+    for(let i=0;i<ctx.length;i++){const v=ctx[i].f(r);if(v&&v!=='')groups[k]._cx[i].add(v);}
+  });
+  const out=Object.values(groups);
+  // gabungkan nilai konteks (umumnya satu; bila >1 ditampilkan dipisah koma)
+  out.forEach(g=>{g.ctx=(g._cx||[]).map(s=>[...s].sort((a,b)=>String(a).localeCompare(String(b),'id')).join(', ')||'-');delete g._cx;});
+  return out;
 }
 function refreshTable(){
   tableData=computeTable(filteredRows());
   renderTable();
+}
+function sortGroups(data){
+  return data.sort((a,b)=>{
+    if(sortKey==='label')return sortDir*String(a.label).localeCompare(String(b.label),'id');
+    if(sortKey.indexOf('ctx')===0){const ci=+sortKey.slice(3);
+      return sortDir*String((a.ctx&&a.ctx[ci])||'').localeCompare(String((b.ctx&&b.ctx[ci])||''),'id');}
+    let va,vb;
+    if(sortKey==='progres'||sortKey==='vstarget'){va=progres(a);vb=progres(b);}
+    else if(sortKey==='done'){va=a.total-a.open;vb=b.total-b.open;}
+    else{va=a[sortKey];vb=b[sortKey];}
+    return sortDir*(va-vb);
+  });
 }
 function renderTable(){
   const dim=currentDim();
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
   const tgt=targetInfo().pct;
-  data.sort((a,b)=>{
-    let va,vb;
-    if(sortKey==='label'){va=a.label;vb=b.label;return sortDir*String(va).localeCompare(String(vb),'id');}
-    if(sortKey==='progres'||sortKey==='vstarget'){va=progres(a);vb=progres(b);}
-    else if(sortKey==='done'){va=a.total-a.open;vb=b.total-b.open;}
-    else{va=a[sortKey];vb=b[sortKey];}
-    return sortDir*(va-vb);
-  });
-  // header
-  const cols=[{k:'label',l:dim.col,txt:true},{k:'n',l:'#SLS/Unit'},{k:'total',l:'Total'}]
+  data=sortGroups(data);
+  // header: nama (freeze) -> kolom konteks (PML/Desa/Kecamatan/PJ) -> angka
+  const ctxCols=(dim.ctx||[]).map((c,i)=>({k:'ctx'+i,l:c.l,txt:true}));
+  const cols=[{k:'label',l:dim.col,txt:true,frz:true}]
+    .concat(ctxCols)
+    .concat([{k:'n',l:'#SLS/Unit'},{k:'total',l:'Total'}])
     .concat(STATUS.map(s=>({k:s.key,l:s.short})))
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'}]);
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
     const arrow=sortKey===c.k?(sortDir>0?' ▲':' ▼'):'';
-    return `<th class="${c.txt?'txt':''}" data-k="${c.k}">${c.l}${arrow}</th>`;
+    return `<th class="${c.txt?'txt':''} ${c.frz?'freeze':''}" data-k="${c.k}">${c.l}${arrow}</th>`;
   }).join('')+'</tr>';
   thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
     const k=th.dataset.k;
@@ -1513,7 +1538,8 @@ function renderTable(){
   data.forEach(g=>{
     const p=progres(g), sel=p-tgt;
     h+='<tr>'+
-      `<td class="txt">${g.label}</td>`+
+      `<td class="txt freeze">${g.label}</td>`+
+      (dim.ctx||[]).map((c,i)=>`<td class="txt">${(g.ctx&&g.ctx[i])||'-'}</td>`).join('')+
       `<td>${nf(g.n)}</td>`+
       `<td><b>${nf(g.total)}</b></td>`+
       STATUS.map(s=>`<td>${g[s.key]?nf(g[s.key]):'<span class=muted>0</span>'}</td>`).join('')+
@@ -1528,7 +1554,9 @@ function renderTable(){
   const t=blank();data.forEach(g=>{t.total+=g.total;t.n+=g.n;STATUS.forEach(s=>t[s.key]+=g[s.key]);});
   const tsel=progres(t)-tgt;
   document.querySelector('#rekap tfoot').innerHTML='<tr>'+
-    `<td class="txt">TOTAL (${data.length} baris)</td><td>${nf(t.n)}</td><td>${nf(t.total)}</td>`+
+    `<td class="txt freeze">TOTAL (${data.length} baris)</td>`+
+    (dim.ctx||[]).map(()=>'<td class="txt"></td>').join('')+
+    `<td>${nf(t.n)}</td><td>${nf(t.total)}</td>`+
     STATUS.map(s=>`<td>${nf(t[s.key])}</td>`).join('')+
     `<td><b style="color:#16a34a">${nf(t.total-t.open)}</b></td>`+
     `<td>${pf(progres(t))}%</td>`+
@@ -1538,12 +1566,13 @@ function renderTable(){
 function exportCSV(){
   const dim=currentDim();
   const tgt=targetInfo().pct;
-  const head=[dim.col,'JumlahUnit','TotalAssignment'].concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin']);
+  const ctxLabels=(dim.ctx||[]).map(c=>c.l);
+  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin']);
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
-  data.sort((a,b)=>{if(sortKey==='label')return sortDir*String(a.label).localeCompare(String(b.label),'id');const va=(sortKey==='progres'||sortKey==='vstarget')?progres(a):a[sortKey],vb=(sortKey==='progres'||sortKey==='vstarget')?progres(b):b[sortKey];return sortDir*(va-vb);});
+  data=sortGroups(data);
   const lines=[head.join(';')];
-  data.forEach(g=>{const p=progres(g);lines.push([csv(g.label),g.n,g.total].concat(STATUS.map(s=>g[s.key])).concat([g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10]).join(';'));});
+  data.forEach(g=>{const p=progres(g);lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10]).join(';'));});
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap_'+dim.key+'_SE2026.csv';a.click();
   function csv(s){s=String(s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
