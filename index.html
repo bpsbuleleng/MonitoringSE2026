@@ -1247,7 +1247,11 @@ function trendBreakdown(){
     if(flt.kec)  return {key:r=>r[idx.iddesa], name:r=>r[idx.nmdesa], label:'Desa'};
     return {key:r=>r[idx.idkec], name:r=>r[idx.nmkec], label:'Kecamatan'};
   }
-  return {key:r=>r[idx.ppl], name:r=>r[idx.ppl], label:'PPL'};   // petugas: selalu per PPL
+  // per Petugas: di level kabupaten/kecamatan tampilkan PML (pengawas);
+  // begitu masuk desa/SLS atau memilih petugas tertentu, baru per PPL (pencacah).
+  if(flt.desa||flt.sls||flt.ppl||flt.pml)
+    return {key:r=>r[idx.ppl], name:r=>r[idx.ppl], label:'PPL'};
+  return {key:r=>r[idx.pml], name:r=>r[idx.pml], label:'PML'};
 }
 function aggPts(ix){return TREND_DETAIL.snaps.map(s=>{let o=0,t=0;for(const i of ix){o+=s.open[i]||0;t+=s.total[i]||0;}return {day:s.day,date:s.date,done:t-o,total:t,progres:t?(t-o)/t*100:0};});}
 function trendData(){
