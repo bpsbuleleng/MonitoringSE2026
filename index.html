@@ -711,6 +711,8 @@ body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#eef2f7;color:
 .kpi.k-revp{border-color:#e11d48}
 .kpi.k-reva{border-color:#c026d3}
 .kpi.k-prog{border-color:#16a34a;background:#f0fdf4}
+.kpi.k-tab{border-color:#0ea5e9;background:#f0f9ff}
+.kpi.k-tab .val{color:#0369a1}
 .kpi.k-i-red{border-color:#dc2626;background:#fef2f2}
 .kpi.k-i-amber{border-color:#d97706;background:#fffbeb}
 .kpi.k-i-green{border-color:#16a34a;background:#f0fdf4}
@@ -1005,6 +1007,11 @@ function renderKPI(rows){
     ['k-revp','Revoked Pengawas',t.revPengawas,t.total],
     ['k-reva','Revoked Admin Kab',t.revAdmin,t.total],
     ['k-prog','% Progres (non-open)',null,null],
+    ['k-tab','Jumlah Keluarga',t.kk,null],
+    ['k-tab','Usaha (Keluarga)',t.ushkk,null],
+    ['k-tab','Usaha',t.usaha,null],
+    ['k-tab','Bangunan Kosong',t.bkosong,null],
+    ['k-tab','Tidak Ditemukan',t.tdktemu,null],
   ];
   let h='';
   for(const [cls,lbl,val,den] of cards){
@@ -1012,7 +1019,7 @@ function renderKPI(rows){
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${pf(progres(t))}%</div><div class="pct">${nf(Math.max(0,t.total-t.open))} dari ${nf(t.total)} unit</div></div>`;
     }else{
       const pct = den? ` <span class="pct">${pf(val/den*100)}%</span>`:'';
-      h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':'&nbsp;'}</div></div>`;
+      h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':(cls==='k-tab'?'hasil pendataan':'&nbsp;')}</div></div>`;
     }
   }
   document.getElementById('kpis').innerHTML=h;
