@@ -713,6 +713,8 @@ body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:#eef2f7;color:
 .kpi.k-prog{border-color:#16a34a;background:#f0fdf4}
 .kpi.k-tab{border-color:#0ea5e9;background:#f0f9ff}
 .kpi.k-tab .val{color:#0369a1}
+.kpi.k-tab-red{border-color:#dc2626;background:#fef2f2}
+.kpi.k-tab-red .val{color:#b91c1c}
 .kpi.k-i-red{border-color:#dc2626;background:#fef2f2}
 .kpi.k-i-amber{border-color:#d97706;background:#fffbeb}
 .kpi.k-i-green{border-color:#16a34a;background:#f0fdf4}
@@ -959,13 +961,16 @@ const STATUS = [
    short = judul kolom Rekap · card = label kartu KPI · lbl = header CSV */
 const TAB = [
   {key:'rkkel',     short:'Keluarga',     card:'Keluarga',             lbl:'RekapKeluarga'},
-  {key:'rkkellain', short:'Kel. Lainnya', card:'Keluarga Lainnya',     lbl:'RekapKeluargaLainnya', red:true},
+  {key:'rkkellain', short:'Kel. Lainnya', card:'Keluarga Lainnya',     lbl:'RekapKeluargaLainnya', red:true,
+    desc:'Keluarga selain yang aktif terdata: tidak ditemukan, meninggal (seluruh ART), tidak eligible, tidak ditemui, dan kasus khusus.'},
   {key:'rkush',     short:'Usaha',        card:'Usaha',                lbl:'RekapUsaha'},
-  {key:'rkushlain', short:'Usaha Lain',   card:'Usaha Lainnya',        lbl:'RekapUsahaLainnya', red:true},
+  {key:'rkushlain', short:'Usaha Lain',   card:'Usaha Lainnya',        lbl:'RekapUsahaLainnya', red:true,
+    desc:'Usaha selain yang aktif terdata: tidak ditemukan, tutup, ganda, dan non-respon.'},
   {key:'rkbu',      short:'Bgn Usaha',    card:'Bangunan Usaha',       lbl:'RekapBangUsaha'},
   {key:'rkbc',      short:'Bgn Campuran', card:'Bangunan Campuran',    lbl:'RekapBangCampuran'},
   {key:'rkbt',      short:'Bgn Tinggal',  card:'Bangunan Tmp Tinggal', lbl:'RekapBangTempatTinggal'},
-  {key:'rkbl',      short:'Bgn Lainnya',  card:'Bangunan Lainnya',     lbl:'RekapBangLainnya', red:true},
+  {key:'rkbl',      short:'Bgn Lainnya',  card:'Bangunan Lainnya',     lbl:'RekapBangLainnya', red:true,
+    desc:'Bangunan selain usaha/campuran/tempat tinggal: tempat ibadah/kantor/organisasi, kantor pemerintah, bangunan kosong/rusak, virtual office, panti/lapas/barak, dan non-respon.'},
 ];
 
 /* unique value helpers for filters */
@@ -1011,14 +1016,14 @@ function renderKPI(rows){
     ['k-revp','Revoked Pengawas',t.revPengawas,t.total],
     ['k-reva','Revoked Admin Kab',t.revAdmin,t.total],
     ['k-prog','% Progres (non-open)',null,null],
-  ].concat(TAB.map(tt=>[tt.red?'k-tab-red':'k-tab',tt.card,t[tt.key],null]));
+  ].concat(TAB.map(tt=>[tt.red?'k-tab-red':'k-tab',tt.card,t[tt.key],null,tt.desc]));
   let h='';
-  for(const [cls,lbl,val,den] of cards){
+  for(const [cls,lbl,val,den,desc] of cards){
+    const tip=desc?` title="${desc}"`:'';
     if(cls==='k-prog'){
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${pf(progres(t))}%</div><div class="pct">${nf(Math.max(0,t.total-t.open))} dari ${nf(t.total)} unit</div></div>`;
     }else{
-      const pct = den? ` <span class="pct">${pf(val/den*100)}%</span>`:'';
-      h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':(cls.indexOf('k-tab')===0?'hasil pendataan':'&nbsp;')}</div></div>`;
+      h+=`<div class="kpi ${cls}"${tip}><div class="lbl">${lbl}${desc?' <span style="cursor:help">ⓘ</span>':''}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':(cls.indexOf('k-tab')===0?'hasil pendataan':'&nbsp;')}</div></div>`;
     }
   }
   document.getElementById('kpis').innerHTML=h;
@@ -1541,11 +1546,11 @@ function renderTable(){
     .concat([{k:'n',l:'#SLS/Unit'},{k:'total',l:'Total'}])
     .concat(STATUS.map(s=>({k:s.key,l:s.short})))
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'}])
-    .concat(TAB.map(t=>({k:t.key,l:t.short})));
+    .concat(TAB.map(t=>({k:t.key,l:t.short,red:t.red,desc:t.desc})));
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
     const arrow=sortKey===c.k?(sortDir>0?' ▲':' ▼'):'';
-    return `<th class="${c.txt?'txt':''} ${c.frz?'freeze':''}" data-k="${c.k}">${c.l}${arrow}</th>`;
+    return `<th class="${c.txt?'txt':''} ${c.frz?'freeze':''}" data-k="${c.k}"${c.red?' style="color:#dc2626"':''}${c.desc?` title="${c.desc}"`:''}>${c.l}${c.desc?' ⓘ':''}${arrow}</th>`;
   }).join('')+'</tr>';
   thead.querySelectorAll('th').forEach(th=>th.onclick=()=>{
     const k=th.dataset.k;
@@ -1566,7 +1571,7 @@ function renderTable(){
       `<td><b style="color:#16a34a">${nf(g.total-g.open)}</b></td>`+
       `<td><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div class="bar" style="width:60px"><span style="width:${Math.min(100,p)}%"></span></div><b>${pf(p)}%</b></div></td>`+
       `<td style="color:${sel>=0?'#16a34a':'#dc2626'};font-weight:700;white-space:nowrap">${sel>=0?'✓ +':'⚠ '}${pf(sel)}</td>`+
-      TAB.map(t=>`<td>${g[t.key]?nf(g[t.key]):'<span class=muted>0</span>'}</td>`).join('')+
+      TAB.map(t=>`<td${t.red?' style="color:#dc2626;font-weight:700"':''}>${g[t.key]?nf(g[t.key]):'<span class=muted>0</span>'}</td>`).join('')+
     '</tr>';
   });
   if(!data.length) h='<tr><td class="txt muted" colspan="'+cols.length+'">Tidak ada data sesuai filter.</td></tr>';
@@ -1582,7 +1587,7 @@ function renderTable(){
     `<td><b style="color:#16a34a">${nf(t.total-t.open)}</b></td>`+
     `<td>${pf(progres(t))}%</td>`+
     `<td style="color:${tsel>=0?'#16a34a':'#dc2626'}">${tsel>=0?'+':''}${pf(tsel)}</td>`+
-    TAB.map(tt=>`<td>${nf(t[tt.key])}</td>`).join('')+'</tr>';
+    TAB.map(tt=>`<td${tt.red?' style="color:#dc2626"':''}>${nf(t[tt.key])}</td>`).join('')+'</tr>';
   document.getElementById('t-count').textContent=data.length+' baris ditampilkan';
 }
 function exportCSV(){
