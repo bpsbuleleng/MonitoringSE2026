@@ -987,6 +987,33 @@ const TAB = SHOW_TAB ? [
     desc:'Bangunan selain usaha/campuran/tempat tinggal: tempat ibadah/kantor/organisasi, kantor pemerintah, bangunan kosong/rusak, virtual office, panti/lapas/barak, dan non-respon.'},
 ] : [];
 
+/* RINCIAN komponen kategori "lainnya" (penjumlahan beberapa angka).
+   key kartu -> [ [field payload, label] ... ]. field harus sama dgn TAB_DETAIL di gen_data. */
+const TAB_BRK = {
+  rkkellain: [
+    ['klTdk', 'Tidak Ditemukan'],
+    ['klMng', 'Meninggal (seluruh ART)'],
+    ['klElig','Tidak Eligible'],
+    ['klTmu', 'Tidak Ditemui'],
+    ['klKhs', 'Kasus Khusus'],
+  ],
+  rkushlain: [
+    ['ulTdk', 'Tidak Ditemukan'],
+    ['ulTtp', 'Tutup'],
+    ['ulGnd', 'Ganda'],
+    ['ulNr',  'Non-Respon'],
+  ],
+  rkbl: [
+    ['blIbd', 'Ibadah / Kantor Organisasi'],
+    ['blPem', 'Kantor Pemerintah'],
+    ['blKsg', 'Bangunan Kosong / Rusak'],
+    ['blVo',  'Virtual Office'],
+    ['blPti', 'Panti / Lapas / Barak'],
+    ['blNr',  'Non-Respon'],
+  ],
+};
+const TAB_DETAIL_KEYS = Object.values(TAB_BRK).reduce((a,arr)=>a.concat(arr.map(x=>x[0])),[]);
+
 /* unique value helpers for filters */
 function uniq(field){const s=new Set();ROWS.forEach(r=>{const v=r[idx[field]];if(v!=='')s.add(v);});return [...s].sort((a,b)=>String(a).localeCompare(String(b),'id'));}
 
@@ -1011,8 +1038,8 @@ function rowPass(r){
 function filteredRows(){return ROWS.filter(rowPass);}
 
 /* aggregate a set of rows into one totals object */
-function blank(){const o={total:0,n:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);return o;}
-function add(o,r){o.total+=r[idx.total];o.n++;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);return o;}
+function blank(){const o={total:0,n:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
+function add(o,r){o.total+=r[idx.total];o.n++;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
 function progres(o){if(!o.total)return 0;const p=(o.total-o.open)/o.total*100;return p<0?0:p;}
 
 /* ============================================================= KPI */
@@ -1030,17 +1057,37 @@ function renderKPI(rows){
     ['k-revp','Revoked Pengawas',t.revPengawas,t.total],
     ['k-reva','Revoked Admin Kab',t.revAdmin,t.total],
     ['k-prog','% Progres (non-open)',null,null],
-  ].concat(TAB.map(tt=>[tt.red?'k-tab-red':'k-tab',tt.card,t[tt.key],null,tt.desc]));
+  ];
   let h='';
-  for(const [cls,lbl,val,den,desc] of cards){
-    const tip=desc?` title="${desc}"`:'';
+  for(const [cls,lbl,val,den] of cards){
     if(cls==='k-prog'){
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${pf(progres(t))}%</div><div class="pct">${nf(Math.max(0,t.total-t.open))} dari ${nf(t.total)} unit</div></div>`;
     }else{
-      h+=`<div class="kpi ${cls}"${tip}><div class="lbl">${lbl}${desc?' <span style="cursor:help">ⓘ</span>':''}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':(cls.indexOf('k-tab')===0?'hasil pendataan':'&nbsp;')}</div></div>`;
+      h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':'&nbsp;'}</div></div>`;
     }
   }
   document.getElementById('kpis').innerHTML=h;
+}
+
+/* ============================================================= hasil pendataan (keluarga/usaha/bangunan) */
+function renderTab(rows){
+  const host=document.getElementById('kpis3');
+  if(!host) return;
+  if(!TAB.length){host.innerHTML='';return;}
+  const t=blank();rows.forEach(r=>add(t,r));
+  let h='';
+  for(const tt of TAB){
+    const cls=tt.red?'k-tab-red':'k-tab';
+    const tip=tt.desc?` title="${tt.desc}"`:'';
+    const info=tt.desc?' <span style="cursor:help">ⓘ</span>':'';
+    const items=TAB_BRK[tt.key];
+    let brk='';
+    if(items){
+      brk='<div class="brk">'+items.map(it=>`<div class="brk-row"><span>${it[1]}</span><b>${nf(t[it[0]])}</b></div>`).join('')+'</div>';
+    }
+    h+=`<div class="kpi ${cls}"${tip}><div class="lbl">${tt.card}${info}</div><div class="val">${nf(t[tt.key])}</div><div class="pct">hasil pendataan</div>${brk}</div>`;
+  }
+  host.innerHTML=h;
 }
 
 /* ============================================================= indikator perhatian + belum jalan */
@@ -1675,6 +1722,7 @@ function refreshAll(){
   const rows=filteredRows();
   renderKPI(rows);
   renderInsights(rows);
+  renderTab(rows);
   renderTarget(rows);
   renderStatus(rows);
   renderMap(rows);
