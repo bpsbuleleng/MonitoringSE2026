@@ -1069,6 +1069,7 @@ function filteredRows(){return ROWS.filter(rowPass);}
 function blank(){const o={total:0,n:0,awal:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
 function add(o,r){o.total+=r[idx.total];o.n++;o.awal+=r[idx.awal]||0;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
 function progres(o){if(!o.total)return 0;const p=(o.total-o.open)/o.total*100;return p<0?0:p;}
+function progresStrict(o){if(!o.total)return 0;const p=(o.total-o.open-o.draft)/o.total*100;return p<0?0:p;}
 
 /* ============================================================= KPI */
 function renderKPI(rows){
@@ -1093,12 +1094,15 @@ function renderKPI(rows){
   for(const [cls,lbl,val,den] of cards){
     if(cls==='k-prog'){
       const _done=Math.max(0,t.total-t.open);
+      const _doneStrict=Math.max(0,t.total-t.open-t.draft);
       const _pDyn=progres(t);
+      const _pStrict=progresStrict(t);
       const _awalD=anyFilterActive()?t.awal:(D.prelist_awal_total||t.awal);
       const _pAwal=_awalD>0?_done/_awalD*100:0;
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div>`+
          `<div class="val">${pf(_pDyn)}%</div>`+
-         `<div class="pct">${nf(_done)} dari ${nf(t.total)} unit (total kini)</div>`+
+         `<div class="pct">${nf(_done)} dari ${nf(t.total)} unit (excl. open)</div>`+
+         `<div class="pct" style="margin-top:4px;color:#0369a1;font-weight:600">${pf(_pStrict)}% dari ${nf(t.total)} unit (excl. open & draft)</div>`+
          (_awalD>0?`<div class="pct" style="margin-top:4px;color:#15803d;font-weight:600">${pf(_pAwal)}% dari ${nf(_awalD)} unit (prelist awal)</div>`:'')+
          `</div>`;
     }else{
@@ -1344,7 +1348,9 @@ function renderTarget(rows){
   const ti=targetInfo();
   const t=blank();rows.forEach(r=>add(t,r));
   const done=Math.max(0,t.total-t.open);
+  const doneStrict=Math.max(0,t.total-t.open-t.draft);
   const real=progres(t), gap=real-ti.pct, ok=gap>=0;
+  const realStrict=progresStrict(t), gapStrict=realStrict-ti.pct, okStrict=gapStrict>=0;
   // Saat tidak ada filter -> pakai total raw dari file prelist (termasuk baris non-subsls)
   // Saat ada filter -> pakai jumlah per-subsls yang terfilter saja
   const awalDenom=anyFilterActive()?t.awal:(D.prelist_awal_total||t.awal);
@@ -1355,9 +1361,11 @@ function renderTarget(rows){
   bn.innerHTML=
     `<div class="tb-item"><span class="k">Mulai 8 Jun 2026</span><span class="v">Hari ke-${ti.day} / ${ti.total}</span></div>`+
     `<div class="tb-item"><span class="k">Target hari ini</span><span class="v">${pf(ti.pct)}%</span></div>`+
-    `<div class="tb-item"><span class="k">Realisasi (vs total kini)</span><span class="v">${pf(real)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(t.total)} unit</div></div>`+
+    `<div class="tb-item"><span class="k">Realisasi (excl. open)</span><span class="v">${pf(real)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(t.total)} unit</div></div>`+
     `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${ok?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${pf(gap)} poin</span></div>`+
-    (t.awal>0?
+    `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (excl. open & draft)</span><span class="v" style="color:#0369a1">${pf(realStrict)}%</span><div style="font-size:10px;color:var(--muted)">${nf(doneStrict)}/${nf(t.total)} unit</div></div>`+
+    `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okStrict?'#16a34a':'#dc2626'}">${gapStrict>=0?'+':''}${pf(gapStrict)} poin</span></div>`+
+    (awalDenom>0?
       `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (vs prelist awal)</span><span class="v" style="color:#15803d">${pf(realAwal)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(awalDenom)} unit</div></div>`+
       `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okAwal?'#16a34a':'#dc2626'}">${gapAwal>=0?'+':''}${pf(gapAwal)} poin</span></div>`
     :'')+
