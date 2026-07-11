@@ -1066,11 +1066,11 @@ function rowPass(r){
 function filteredRows(){return ROWS.filter(rowPass);}
 
 /* aggregate a set of rows into one totals object */
-function blank(){const o={total:0,n:0,awal:0,subSel:0,subEff:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
-function add(o,r){o.total+=r[idx.total];o.n++;o.awal+=r[idx.awal]||0;const _sel=r[idx.selesai],_tot=r[idx.total];if(_sel===1){o.subSel++;o.subEff+=1;}else if(_tot>0){o.subEff+=Math.max(0,(_tot-r[idx.open]-r[idx.draft])/_tot);}STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
+function blank(){const o={total:0,n:0,awal:0,subSel:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
+function add(o,r){o.total+=r[idx.total];o.n++;o.awal+=r[idx.awal]||0;if(r[idx.selesai]===1)o.subSel++;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
 function progres(o){if(!o.total)return 0;const p=(o.total-o.open)/o.total*100;return p<0?0:p;}
 function progresStrict(o){if(!o.total)return 0;const p=(o.total-o.open-o.draft)/o.total*100;return p<0?0:p;}
-function subEffPct(o){return o.n?o.subEff/o.n*100:0;}
+function subEffPct(o){return o.n?o.subSel/o.n*100:0;}
 
 /* ============================================================= KPI */
 function renderKPI(rows){
@@ -1720,7 +1720,7 @@ function renderTable(){
   if(!data.length) h='<tr><td class="txt muted" colspan="'+cols.length+'">Tidak ada data sesuai filter.</td></tr>';
   tb.innerHTML=h;
   // foot total
-  const t=blank();data.forEach(g=>{t.total+=g.total;t.n+=g.n;t.subSel+=g.subSel||0;t.subEff+=g.subEff||0;STATUS.forEach(s=>t[s.key]+=g[s.key]);TAB.forEach(tt=>t[tt.key]+=g[tt.key]||0);TAB_DETAIL_KEYS.forEach(k=>t[k]+=g[k]||0);});
+  const t=blank();data.forEach(g=>{t.total+=g.total;t.n+=g.n;t.subSel+=g.subSel||0;STATUS.forEach(s=>t[s.key]+=g[s.key]);TAB.forEach(tt=>t[tt.key]+=g[tt.key]||0);TAB_DETAIL_KEYS.forEach(k=>t[k]+=g[k]||0);});
   const tsel=progres(t)-tgt, tselS=progresStrict(t)-tgt;
   const tdoneS=Math.max(0,t.total-t.open-t.draft);
   document.querySelector('#rekap tfoot').innerHTML='<tr>'+
