@@ -1775,7 +1775,7 @@ function renderTable(){
     .concat([{k:'n',l:'#SLS/Unit'},{k:'total',l:'Total'}])
     .concat(STATUS.map(s=>({k:s.key,l:s.short})))
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'},
-             {k:'doneStrict',l:'Excl. Open & Draft'},{k:'progresStrict',l:'% Excl. Draft'},{k:'vstargetStrict',l:'vs Target (excl. draft)'}])
+             {k:'doneStrict',l:'Selain Open & Draft'},{k:'progresStrict',l:'% Selain Open & Draft'},{k:'vstargetStrict',l:'vs Target (selain open & draft)'}])
     .concat(tabCols());
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
