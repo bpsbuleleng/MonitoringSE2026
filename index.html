@@ -907,6 +907,17 @@ tfoot td.freeze{left:0;z-index:4;box-shadow:1px 0 0 var(--line)}
     <div class="table-scroll"><table id="rekap"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
   </div>
 
+  <!-- MATRIKS SUB-SLS SELESAI -->
+  <div class="card panel">
+    <div class="section-title">✅ Matriks Penyelesaian Sub-SLS per PPL</div>
+    <div class="tbl-tools">
+      <span class="count-note" id="mx-count"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="mx-export">⬇ Export CSV</button>
+    </div>
+    <div class="table-scroll"><table id="mx-table"><thead></thead><tbody></tbody></table></div>
+  </div>
+
   <!-- MACET (DARI HISTORI) -->
   <div class="card panel">
     <div class="section-title">🚨 Perlu Ditindaklanjuti — Macet (dari histori)</div>
@@ -1066,11 +1077,10 @@ function rowPass(r){
 function filteredRows(){return ROWS.filter(rowPass);}
 
 /* aggregate a set of rows into one totals object */
-function blank(){const o={total:0,n:0,awal:0,subSel:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
-function add(o,r){o.total+=r[idx.total];o.n++;o.awal+=r[idx.awal]||0;if(r[idx.selesai]===1)o.subSel++;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
+function blank(){const o={total:0,n:0,awal:0};STATUS.forEach(s=>o[s.key]=0);TAB.forEach(t=>o[t.key]=0);TAB_DETAIL_KEYS.forEach(k=>o[k]=0);return o;}
+function add(o,r){o.total+=r[idx.total];o.n++;o.awal+=r[idx.awal]||0;STATUS.forEach(s=>o[s.key]+=r[idx[s.key]]);TAB.forEach(t=>o[t.key]+=r[idx[t.key]]||0);TAB_DETAIL_KEYS.forEach(k=>o[k]+=r[idx[k]]||0);return o;}
 function progres(o){if(!o.total)return 0;const p=(o.total-o.open)/o.total*100;return p<0?0:p;}
 function progresStrict(o){if(!o.total)return 0;const p=(o.total-o.open-o.draft)/o.total*100;return p<0?0:p;}
-function subEffPct(o){return o.n?o.subSel/o.n*100:0;}
 
 /* ============================================================= KPI */
 function renderKPI(rows){
@@ -1352,6 +1362,93 @@ function bmExport(){
   else{head=['SLS','Sub','Desa','Kecamatan','PPL','PML','Open'];lines=bmData.map(g=>[csvv(g.nmsls),g.kdsub,csvv(g.nmdesa),csvv(g.nmkec),csvv(setStr(g.ppls)),csvv(setStr(g.pmls)),g.open].join(';'));}
   const blob=new Blob(['﻿'+[head.join(';'),...lines].join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='belum_mulai_'+bmDim+'_SE2026.csv';a.click();
+}
+
+/* ---- Matriks Sub-SLS Selesai per PPL ---- */
+let mxData=[];
+function buildMxData(){
+  const rows=filteredRows();
+  const byPpl={};
+  rows.forEach(r=>{
+    if(r[idx.total]<=0) return;
+    const ppl=r[idx.ppl];
+    if(!byPpl[ppl]) byPpl[ppl]={ppl,pml:r[idx.pml],nmkec:r[idx.nmkec],pj:r[idx.pj],subs:[],subSel:0,selIds:[],subMaxPartial:0,subEff:0};
+    const g=byPpl[ppl];
+    const tot=r[idx.total];
+    const prog=Math.min(100,Math.max(0,(tot-r[idx.open]-r[idx.draft])/tot*100));
+    const sel=r[idx.selesai]===1;
+    const subId=r[idx.idsls]+String(r[idx.kdsub]).padStart(2,'0');
+    g.subs.push({kdsub:r[idx.kdsub],prog,sel,id:subId});
+    if(sel){g.subSel++;g.selIds.push(subId);}
+    else if(prog>g.subMaxPartial) g.subMaxPartial=prog;
+  });
+  Object.values(byPpl).forEach(g=>{
+    g.subs.sort((a,b)=>a.kdsub-b.kdsub);
+    g.subEff=g.subSel>0?g.subSel+(g.subMaxPartial/100):0;
+  });
+  return Object.values(byPpl).sort((a,b)=>a.pml.localeCompare(b.pml,'id')||a.ppl.localeCompare(b.ppl,'id'));
+}
+function renderMx(){
+  mxData=buildMxData();
+  const maxSub=mxData.reduce((m,g)=>Math.max(m,g.subs.length),0);
+  const th=document.querySelector('#mx-table thead');
+  const tb=document.querySelector('#mx-table tbody');
+  let head='<tr>'+
+    '<th class="txt freeze">PML</th><th class="txt">PPL</th>'+
+    '<th class="txt">Kecamatan</th><th class="txt">PIC</th>'+
+    '<th>Target<br>Sub</th><th>Selesai</th><th>%&nbsp;Eff</th>'+
+    '<th class="txt" style="min-width:160px">Id Sub Selesai</th>';
+  for(let i=1;i<=maxSub;i++) head+=`<th style="min-width:80px">Sub ${i}</th>`;
+  head+='</tr>';
+  th.innerHTML=head;
+  if(!mxData.length){tb.innerHTML=`<tr><td class="txt muted" colspan="${8+maxSub}">Tidak ada data.</td></tr>`;return;}
+  const ncols=8+maxSub;
+  let h='';
+  mxData.forEach(g=>{
+    const pct=g.subs.length?g.subEff/g.subs.length*100:0;
+    const hasSel=g.subSel>0;
+    h+='<tr>'+
+      `<td class="txt freeze">${g.pml}</td>`+
+      `<td class="txt">${g.ppl}</td>`+
+      `<td class="txt">${g.nmkec}</td>`+
+      `<td class="txt">${g.pj||'-'}</td>`+
+      `<td style="text-align:center">${g.subs.length}</td>`+
+      `<td style="color:${hasSel?'#16a34a':'#6b7280'};font-weight:600;text-align:center">${g.subSel}</td>`+
+      `<td><div style="display:flex;align-items:center;gap:5px">`+
+        `<div class="bar" style="width:55px"><span style="width:${Math.min(100,pct)}%;background:${hasSel?'#16a34a':'#6b7280'}"></span></div>`+
+        `<span style="font-size:11px;color:${hasSel?'#16a34a':'#6b7280'};font-weight:600">${pf(pct)}%</span>`+
+      `</div></td>`+
+      `<td class="txt" style="font-size:10px;color:#0369a1;line-height:1.4">${g.selIds.join('<br>')}</td>`;
+    for(let i=0;i<maxSub;i++){
+      const s=g.subs[i];
+      if(!s){h+='<td></td>';continue;}
+      const col=s.sel?'#16a34a':'#dc2626';
+      h+=`<td><div style="display:flex;align-items:center;gap:4px">`+
+        `<div class="bar" style="width:45px"><span style="width:${s.prog}%;background:${col}"></span></div>`+
+        `<span style="font-size:11px;color:${col};font-weight:600">${pf(s.prog)}%</span>`+
+        `</div></td>`;
+    }
+    h+='</tr>';
+  });
+  tb.innerHTML=h;
+  document.getElementById('mx-count').textContent=mxData.length+' PPL';
+}
+function mxExport(){
+  if(!mxData.length) return;
+  const maxSub=mxData.reduce((m,g)=>Math.max(m,g.subs.length),0);
+  const head=['PML','PPL','Kecamatan','PIC','TargetSub','SubSelesai','PctEff','IdSubSelesai']
+    .concat(Array.from({length:maxSub},(_,i)=>`Sub${i+1}_Prog`))
+    .concat(Array.from({length:maxSub},(_,i)=>`Sub${i+1}_Selesai`));
+  const lines=[head.join(';')];
+  mxData.forEach(g=>{
+    const pct=g.subs.length?g.subEff/g.subs.length*100:0;
+    const row=[csvv(g.pml),csvv(g.ppl),csvv(g.nmkec),csvv(g.pj||''),g.subs.length,g.subSel,Math.round(pct*10)/10,csvv(g.selIds.join(' '))]
+      .concat(Array.from({length:maxSub},(_,i)=>g.subs[i]?Math.round(g.subs[i].prog*10)/10:''))
+      .concat(Array.from({length:maxSub},(_,i)=>g.subs[i]?(g.subs[i].sel?1:0):''));
+    lines.push(row.join(';'));
+  });
+  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='matriks_selesai_SE2026.csv';a.click();
 }
 
 /* ---- target harian: banner (perbandingan vs target ada di tabel Rekapitulasi) ---- */
@@ -1678,8 +1775,7 @@ function renderTable(){
     .concat([{k:'n',l:'#SLS/Unit'},{k:'total',l:'Total'}])
     .concat(STATUS.map(s=>({k:s.key,l:s.short})))
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'},
-             {k:'doneStrict',l:'Excl. Open & Draft'},{k:'progresStrict',l:'% Excl. Draft'},{k:'vstargetStrict',l:'vs Target (excl. draft)'},
-             {k:'subSel',l:'Sub-SLS Selesai'},{k:'subEffPct',l:'% Eff. Selesai Sub'}])
+             {k:'doneStrict',l:'Excl. Open & Draft'},{k:'progresStrict',l:'% Excl. Draft'},{k:'vstargetStrict',l:'vs Target (excl. draft)'}])
     .concat(tabCols());
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
@@ -1712,15 +1808,13 @@ function renderTable(){
       `<td style="color:#0369a1;font-weight:600">${nf(ds)}</td>`+
       `<td><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div class="bar" style="width:60px"><span style="width:${Math.min(100,ps)}%;background:#0369a1"></span></div><b style="color:#0369a1">${pf(ps)}%</b></div></td>`+
       `<td style="color:${sels>=0?'#16a34a':'#dc2626'};font-weight:700;white-space:nowrap">${sels>=0?'✓ +':'⚠ '}${pf(sels)}</td>`+
-      `<td style="color:#0d9488;font-weight:600">${nf(g.subSel)}</td>`+
-      `<td><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div class="bar" style="width:60px"><span style="width:${Math.min(100,subEffPct(g))}%;background:#0d9488"></span></div><b style="color:#0d9488">${pf(subEffPct(g))}%</b></div></td>`+
       tabCols().map(c=>{const cell=g[c.k]?nf(g[c.k]):'<span class=muted>0</span>';return c.sub?`<td class="subcol">${cell}</td>`:`<td${c.red?' style="color:#dc2626;font-weight:700"':''}>${cell}</td>`;}).join('')+
     '</tr>';
   });
   if(!data.length) h='<tr><td class="txt muted" colspan="'+cols.length+'">Tidak ada data sesuai filter.</td></tr>';
   tb.innerHTML=h;
   // foot total
-  const t=blank();data.forEach(g=>{t.total+=g.total;t.n+=g.n;t.subSel+=g.subSel||0;STATUS.forEach(s=>t[s.key]+=g[s.key]);TAB.forEach(tt=>t[tt.key]+=g[tt.key]||0);TAB_DETAIL_KEYS.forEach(k=>t[k]+=g[k]||0);});
+  const t=blank();data.forEach(g=>{t.total+=g.total;t.n+=g.n;STATUS.forEach(s=>t[s.key]+=g[s.key]);TAB.forEach(tt=>t[tt.key]+=g[tt.key]||0);TAB_DETAIL_KEYS.forEach(k=>t[k]+=g[k]||0);});
   const tsel=progres(t)-tgt, tselS=progresStrict(t)-tgt;
   const tdoneS=Math.max(0,t.total-t.open-t.draft);
   document.querySelector('#rekap tfoot').innerHTML='<tr>'+
@@ -1734,8 +1828,6 @@ function renderTable(){
     `<td style="color:#0369a1;font-weight:600">${nf(tdoneS)}</td>`+
     `<td style="color:#0369a1">${pf(progresStrict(t))}%</td>`+
     `<td style="color:${tselS>=0?'#16a34a':'#dc2626'}">${tselS>=0?'+':''}${pf(tselS)}</td>`+
-    `<td style="color:#0d9488;font-weight:600">${nf(t.subSel)}</td>`+
-    `<td style="color:#0d9488">${pf(subEffPct(t))}%</td>`+
     tabCols().map(c=>c.sub?`<td class="subcol">${nf(t[c.k])}</td>`:`<td${c.red?' style="color:#dc2626"':''}>${nf(t[c.k])}</td>`).join('')+'</tr>';
   document.getElementById('t-count').textContent=data.length+' baris ditampilkan';
 }
@@ -1743,12 +1835,12 @@ function exportCSV(){
   const dim=currentDim();
   const tgt=targetInfo().pct;
   const ctxLabels=(dim.ctx||[]).map(c=>c.l);
-  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','ExclDraft','PogresExclDraft','SelisihExclDraft','SubSLSSelesai','PctEffSelesai']).concat(tabCols().map(c=>c.csv));
+  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','ExclDraft','PogresExclDraft','SelisihExclDraft']).concat(tabCols().map(c=>c.csv));
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
   data=sortGroups(data);
   const lines=[head.join(';')];
-  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10,g.subSel||0,Math.round(subEffPct(g)*10)/10]).concat(tabCols().map(c=>g[c.k])).join(';'));});
+  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10]).concat(tabCols().map(c=>g[c.k])).join(';'));});
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap_'+dim.key+'_SE2026.csv';a.click();
   function csv(s){s=String(s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
@@ -1818,6 +1910,7 @@ function refreshAll(){
   renderBJ();
   renderSS();
   renderBM();
+  renderMx();
   renderTrend();
 }
 
@@ -1850,6 +1943,7 @@ function init(){
   document.getElementById('bj-export').onclick=bjExport;
   document.getElementById('ss-export').onclick=ssExport;
   document.getElementById('bm-export').onclick=bmExport;
+  document.getElementById('mx-export').onclick=mxExport;
   document.querySelectorAll('#trend-view button').forEach(b=>b.onclick=()=>{trendView=b.dataset.v;document.querySelectorAll('#trend-view button').forEach(x=>x.classList.toggle('active',x===b));renderTrend();});
   document.querySelectorAll('#trend-metric button').forEach(b=>b.onclick=()=>{trendMetric=b.dataset.m;document.querySelectorAll('#trend-metric button').forEach(x=>x.classList.toggle('active',x===b));renderTrend();});
   document.querySelectorAll('#trend-gran button').forEach(b=>b.onclick=()=>{trendGran=b.dataset.g;document.querySelectorAll('#trend-gran button').forEach(x=>x.classList.toggle('active',x===b));renderTrend();});
