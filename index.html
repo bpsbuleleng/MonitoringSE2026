@@ -989,11 +989,16 @@ const STATUS = [
   {key:'compAdmin',    lbl:'Completed Admin Kab',    short:'COMPLETED',       col:'#15803d'},
 ];
 
+/* Scraping FASIH SM (rekap & selesai cacah Blok Sensus) sedang DIJEDA -> data
+   turunan dari situ disembunyikan dulu di web supaya tak nampilkan angka basi.
+   Balikin ke true masing2 kalau scraping-nya aktif lagi & datanya segar. */
+const SHOW_SELESAI_FASIH = false;   // kartu "Sub-SLS Selesai (resmi FASIH)" -> fallback open=0
+
 /* hasil pendataan (tabulasi sub-SLS) — diagregasi seperti STATUS.
    short = judul kolom Rekap · card = label kartu KPI · lbl = header CSV
    SHOW_TAB=false -> SEMBUNYIKAN dulu di web (kartu KPI, kolom rekap, CSV).
    Kembalikan dengan set SHOW_TAB=true. Data tetap ada di payload. */
-const SHOW_TAB = true;
+const SHOW_TAB = false;
 const TAB = SHOW_TAB ? [
   {key:'rkkel',     short:'Keluarga',     card:'Keluarga',             lbl:'RekapKeluarga'},
   {key:'rkkellain', short:'Kel. Lainnya', card:'Keluarga Lainnya',     lbl:'RekapKeluargaLainnya', red:true,
@@ -1212,8 +1217,8 @@ function renderInsights(rows){
     if(r[idx.total]>0){
       subTot++;
       if(r[idx.open]===0) subSel++;
-      if(r[idx.selesai]===1){subSelFasih++;hasFasihSelesai=true;}
-      if(r[idx.selesai]>=0) hasFasihSelesai=true;  // ada data FASIH (0 atau 1)
+      if(SHOW_SELESAI_FASIH && r[idx.selesai]===1){subSelFasih++;hasFasihSelesai=true;}
+      if(SHOW_SELESAI_FASIH && r[idx.selesai]>=0) hasFasihSelesai=true;  // ada data FASIH (0 atau 1)
     }
   });
   const subSelShow = hasFasihSelesai ? subSelFasih : subSel;
@@ -1376,7 +1381,7 @@ function buildMxData(){
     const g=byPpl[ppl];
     const tot=r[idx.total];
     const prog=Math.min(100,Math.max(0,(tot-r[idx.open]-r[idx.draft])/tot*100));
-    const sel=r[idx.selesai]===1;
+    const sel=SHOW_SELESAI_FASIH ? (r[idx.selesai]===1) : (prog>=100);
     const subId=r[idx.idsls]+String(r[idx.kdsub]).padStart(2,'0');
     g.subs.push({kdsub:r[idx.kdsub],prog,sel,id:subId});
     if(sel){g.subSel++;g.selIds.push(subId);}
