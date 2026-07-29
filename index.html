@@ -1115,11 +1115,13 @@ function renderKPI(rows){
       const _pStrict=progresStrict(t);
       const _awalD=anyFilterActive()?t.awal:(D.prelist_awal_total||t.awal);
       const _pAwal=_awalD>0?_done/_awalD*100:0;
+      const _pAwalStrict=_awalD>0?_doneStrict/_awalD*100:0;
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div>`+
          `<div class="val">${pf(_pDyn)}%</div>`+
-         `<div class="pct">${nf(_done)} dari ${nf(t.total)} unit (excl. open)</div>`+
-         `<div class="pct" style="margin-top:4px;color:#0369a1;font-weight:600">${pf(_pStrict)}% dari ${nf(t.total)} unit (excl. open & draft)</div>`+
+         `<div class="pct">${nf(_done)} dari ${nf(t.total)} unit (selain open)</div>`+
+         `<div class="pct" style="margin-top:4px;color:#0369a1;font-weight:600">${pf(_pStrict)}% dari ${nf(t.total)} unit (selain open & draft)</div>`+
          (_awalD>0?`<div class="pct" style="margin-top:4px;color:#15803d;font-weight:600">${pf(_pAwal)}% dari ${nf(_awalD)} unit (prelist awal)</div>`:'')+
+         (_awalD>0?`<div class="pct" style="margin-top:4px;color:#0f766e;font-weight:600">${pf(_pAwalStrict)}% dari ${nf(_awalD)} unit (selain open & draft, prelist awal)</div>`:'')+
          `</div>`;
     }else{
       h+=`<div class="kpi ${cls}"><div class="lbl">${lbl}</div><div class="val">${nf(val)}</div><div class="pct">${den?pf(val/den*100)+'% dari total':'&nbsp;'}</div></div>`;
@@ -1472,18 +1474,22 @@ function renderTarget(rows){
   const awalDenom=anyFilterActive()?t.awal:(D.prelist_awal_total||t.awal);
   const realAwal=awalDenom>0?done/awalDenom*100:0;
   const gapAwal=realAwal-ti.pct, okAwal=gapAwal>=0;
+  const realAwalStrict=awalDenom>0?doneStrict/awalDenom*100:0;
+  const gapAwalStrict=realAwalStrict-ti.pct, okAwalStrict=gapAwalStrict>=0;
   const bn=document.getElementById('target-banner');
   bn.className='tbanner '+(ok?'ok':'bad');
   bn.innerHTML=
     `<div class="tb-item"><span class="k">Mulai 8 Jun 2026</span><span class="v">Hari ke-${ti.day} / ${ti.total}</span></div>`+
     `<div class="tb-item"><span class="k">Target hari ini</span><span class="v">${pf(ti.pct)}%</span></div>`+
-    `<div class="tb-item"><span class="k">Realisasi (excl. open)</span><span class="v">${pf(real)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(t.total)} unit</div></div>`+
+    `<div class="tb-item"><span class="k">Realisasi (selain open)</span><span class="v">${pf(real)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(t.total)} unit</div></div>`+
     `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${ok?'#16a34a':'#dc2626'}">${gap>=0?'+':''}${pf(gap)} poin</span></div>`+
-    `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (excl. open & draft)</span><span class="v" style="color:#0369a1">${pf(realStrict)}%</span><div style="font-size:10px;color:var(--muted)">${nf(doneStrict)}/${nf(t.total)} unit</div></div>`+
+    `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (selain open & draft)</span><span class="v" style="color:#0369a1">${pf(realStrict)}%</span><div style="font-size:10px;color:var(--muted)">${nf(doneStrict)}/${nf(t.total)} unit</div></div>`+
     `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okStrict?'#16a34a':'#dc2626'}">${gapStrict>=0?'+':''}${pf(gapStrict)} poin</span></div>`+
     (awalDenom>0?
       `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (vs prelist awal)</span><span class="v" style="color:#15803d">${pf(realAwal)}%</span><div style="font-size:10px;color:var(--muted)">${nf(done)}/${nf(awalDenom)} unit</div></div>`+
-      `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okAwal?'#16a34a':'#dc2626'}">${gapAwal>=0?'+':''}${pf(gapAwal)} poin</span></div>`
+      `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okAwal?'#16a34a':'#dc2626'}">${gapAwal>=0?'+':''}${pf(gapAwal)} poin</span></div>`+
+      `<div class="tb-item" style="border-left:2px solid #d1d5db;padding-left:14px;margin-left:2px"><span class="k">Realisasi (selain open & draft, vs prelist awal)</span><span class="v" style="color:#0f766e">${pf(realAwalStrict)}%</span><div style="font-size:10px;color:var(--muted)">${nf(doneStrict)}/${nf(awalDenom)} unit</div></div>`+
+      `<div class="tb-item"><span class="k">Selisih</span><span class="v" style="color:${okAwalStrict?'#16a34a':'#dc2626'}">${gapAwalStrict>=0?'+':''}${pf(gapAwalStrict)} poin</span></div>`
     :'')+
     `<span class="tb-badge">${ok?'✓ On Track':'⚠ Di Bawah Target'}</span>`;
 }
@@ -1843,7 +1849,7 @@ function exportCSV(){
   const dim=currentDim();
   const tgt=targetInfo().pct;
   const ctxLabels=(dim.ctx||[]).map(c=>c.l);
-  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','ExclDraft','PogresExclDraft','SelisihExclDraft']).concat(tabCols().map(c=>c.csv));
+  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft']).concat(tabCols().map(c=>c.csv));
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
   data=sortGroups(data);
