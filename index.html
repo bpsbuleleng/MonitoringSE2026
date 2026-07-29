@@ -908,7 +908,7 @@ tfoot td.freeze{left:0;z-index:4;box-shadow:1px 0 0 var(--line)}
   </div>
 
   <!-- MATRIKS SUB-SLS SELESAI -->
-  <div class="card panel">
+  <div class="card panel" id="mx-card">
     <div class="section-title">✅ Matriks Penyelesaian Sub-SLS per PPL</div>
     <div class="tbl-tools">
       <span class="count-note" id="mx-count"></span>
@@ -1394,6 +1394,9 @@ function buildMxData(){
   return Object.values(byPpl).sort((a,b)=>a.pml.localeCompare(b.pml,'id')||a.ppl.localeCompare(b.ppl,'id'));
 }
 function renderMx(){
+  const mxCard=document.getElementById('mx-card');
+  if(!SHOW_SELESAI_FASIH){ if(mxCard) mxCard.style.display='none'; return; }
+  if(mxCard) mxCard.style.display='';
   mxData=buildMxData();
   const maxSub=mxData.reduce((m,g)=>Math.max(m,g.subs.length),0);
   const th=document.querySelector('#mx-table thead');
