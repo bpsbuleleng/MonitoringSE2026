@@ -1169,25 +1169,33 @@ function renderWilkerstat(rows){
   const pKel=t.wsKel>0?t.muKel/t.wsKel*100:0;
   const pUsh=t.wsUsh>0?t.muUsh/t.wsUsh*100:0;
   const brk=items=>'<div class="brk">'+items.map(([lbl,v])=>`<div class="brk-row"><span>${lbl}</span><b>${nf(v)}</b></div>`).join('')+'</div>';
-  const card=(cls,lbl,target,capaian,pct,items)=>
+  const detailCard=(cls,lbl,val,valLbl,items)=>
+    `<div class="kpi ${cls}"><div class="lbl">${lbl}</div>`+
+    `<div class="val">${nf(val)}</div><div class="pct">${valLbl}</div>`+
+    brk(items)+`</div>`;
+  const cmpCard=(cls,lbl,target,capaian,pct)=>
     `<div class="kpi ${cls}"><div class="lbl">${lbl}</div>`+
     `<div class="val">${pf(pct)}%</div>`+
-    `<div class="pct">Capaian ${nf(capaian)} dari target ${nf(target)} (Wilkerstat)</div>`+
-    brk(items)+`</div>`;
+    `<div class="pct">Capaian ${nf(capaian)} dari target ${nf(target)} (Wilkerstat)</div></div>`;
   host.innerHTML=
-    card('k-i-green','Keluarga: Capaian vs Target Wilkerstat',t.wsKel,t.muKel,pKel,[
-      ['Ditemukan',t.muKelDtm],['Baru',t.muKelBaru],['Meninggal',t.muKelMng],
-      ['Tidak Eligible',t.muKelElig],['Tidak Dapat Ditemui',t.muKelTmu],['Tidak Ditemukan',t.muKelTdk],
+    // 1) Target Wilkerstat (mentah)
+    detailCard('k-i-slate','Target Wilkerstat',t.wkMuatan,'total muatan',[
+      ['KK',t.wkKk],['BTT',t.wkBtt],['KK/BTT (target keluarga)',t.wsKel],['BTTK',t.wkBttk],
+      ['BKU',t.wkBku],['BTT Non-Usaha',t.wkNonUsh],['Usaha (target usaha)',t.wsUsh],
     ])+
-    card('k-tab','Usaha: Capaian vs Target Wilkerstat',t.wsUsh,t.muUsh,pUsh,[
+    // 2) Detail capaian usaha
+    detailCard('k-tab','Usaha: Detail Capaian',t.muUsh,'total capaian usaha',[
       ['Ditemukan',t.muUshDtm],['Baru',t.muUshBaru],['Tutup',t.muUshTutup],
       ['Ganda',t.muUshGanda],['Tidak Ditemukan',t.muUshTdk],
     ])+
-    `<div class="kpi k-i-slate"><div class="lbl">Detail Target Wilkerstat</div>`+
-    `<div class="val">${nf(t.wkMuatan)}</div><div class="pct">total muatan</div>`+
-    brk([['KK',t.wkKk],['BTT',t.wkBtt],['KK/BTT (target keluarga)',t.wsKel],['BTTK',t.wkBttk],
-         ['BKU',t.wkBku],['BTT Non-Usaha',t.wkNonUsh],['Usaha (target usaha)',t.wsUsh]])+
-    `</div>`;
+    // 3) Detail capaian keluarga
+    detailCard('k-i-green','Keluarga: Detail Capaian',t.muKel,'total capaian keluarga',[
+      ['Ditemukan',t.muKelDtm],['Baru',t.muKelBaru],['Meninggal',t.muKelMng],
+      ['Tidak Eligible',t.muKelElig],['Tidak Dapat Ditemui',t.muKelTmu],['Tidak Ditemukan',t.muKelTdk],
+    ])+
+    // 4) Perbandingan target vs capaian vs persentase
+    cmpCard('k-tab-red','Usaha: Capaian vs Target Wilkerstat',t.wsUsh,t.muUsh,pUsh)+
+    cmpCard('k-i-amber','Keluarga: Capaian vs Target Wilkerstat',t.wsKel,t.muKel,pKel);
 }
 
 /* ============================================================= indikator perhatian + belum jalan */
@@ -1832,14 +1840,14 @@ function renderTable(){
     .concat([{k:'pctOpen',l:'% Open'}])
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'},
              {k:'doneStrict',l:'Selain Open & Draft'},{k:'progresStrict',l:'% Selain Open & Draft'},{k:'vstargetStrict',l:'vs Target (selain open & draft)'}])
-    .concat([{k:'wsKel',l:'Target Keluarga (Wilkerstat)'},{k:'muKel',l:'Capaian Keluarga (Muatan)'},{k:'pctKel',l:'% Capaian Keluarga'},
-             {k:'wsUsh',l:'Target Usaha (Wilkerstat)'},{k:'muUsh',l:'Capaian Usaha (Muatan)'},{k:'pctUsh',l:'% Capaian Usaha'}])
-    .concat([{k:'muKelDtm',l:'Keluarga Ditemukan'},{k:'muKelBaru',l:'Keluarga Baru'},{k:'muKelMng',l:'Keluarga Meninggal'},
-             {k:'muKelElig',l:'Keluarga Tdk Eligible'},{k:'muKelTmu',l:'Keluarga Tdk Ditemui'},{k:'muKelTdk',l:'Keluarga Tdk Ditemukan'}])
-    .concat([{k:'muUshDtm',l:'Usaha Ditemukan'},{k:'muUshBaru',l:'Usaha Baru'},{k:'muUshTutup',l:'Usaha Tutup'},
-             {k:'muUshGanda',l:'Usaha Ganda'},{k:'muUshTdk',l:'Usaha Tdk Ditemukan'}])
     .concat([{k:'wkKk',l:'Wilkerstat KK'},{k:'wkBtt',l:'Wilkerstat BTT'},{k:'wkBttk',l:'Wilkerstat BTTK'},
              {k:'wkBku',l:'Wilkerstat BKU'},{k:'wkNonUsh',l:'Wilkerstat BTT Non-Usaha'},{k:'wkMuatan',l:'Wilkerstat Muatan'}])
+    .concat([{k:'muUshDtm',l:'Usaha Ditemukan'},{k:'muUshBaru',l:'Usaha Baru'},{k:'muUshTutup',l:'Usaha Tutup'},
+             {k:'muUshGanda',l:'Usaha Ganda'},{k:'muUshTdk',l:'Usaha Tdk Ditemukan'}])
+    .concat([{k:'muKelDtm',l:'Keluarga Ditemukan'},{k:'muKelBaru',l:'Keluarga Baru'},{k:'muKelMng',l:'Keluarga Meninggal'},
+             {k:'muKelElig',l:'Keluarga Tdk Eligible'},{k:'muKelTmu',l:'Keluarga Tdk Ditemui'},{k:'muKelTdk',l:'Keluarga Tdk Ditemukan'}])
+    .concat([{k:'wsKel',l:'Target Keluarga (Wilkerstat)'},{k:'muKel',l:'Capaian Keluarga (Muatan)'},{k:'pctKel',l:'% Capaian Keluarga'},
+             {k:'wsUsh',l:'Target Usaha (Wilkerstat)'},{k:'muUsh',l:'Capaian Usaha (Muatan)'},{k:'pctUsh',l:'% Capaian Usaha'}])
     .concat(tabCols());
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
@@ -1874,15 +1882,15 @@ function renderTable(){
       `<td style="color:#0369a1;font-weight:600">${nf(ds)}</td>`+
       `<td><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div class="bar" style="width:60px"><span style="width:${Math.min(100,ps)}%;background:#0369a1"></span></div><b style="color:#0369a1">${pf(ps)}%</b></div></td>`+
       `<td style="color:${sels>=0?'#16a34a':'#dc2626'};font-weight:700;white-space:nowrap">${sels>=0?'✓ +':'⚠ '}${pf(sels)}</td>`+
+      ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+       'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
+       'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'].map(k=>`<td>${nf(g[k])}</td>`).join('')+
       `<td>${nf(g.wsKel)}</td>`+
       `<td style="color:#15803d;font-weight:600">${nf(g.muKel)}</td>`+
       `<td>${pf(g.wsKel?g.muKel/g.wsKel*100:0)}%</td>`+
       `<td>${nf(g.wsUsh)}</td>`+
       `<td style="color:#0369a1;font-weight:600">${nf(g.muUsh)}</td>`+
       `<td>${pf(g.wsUsh?g.muUsh/g.wsUsh*100:0)}%</td>`+
-      ['muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk',
-       'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
-       'wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan'].map(k=>`<td>${nf(g[k])}</td>`).join('')+
       tabCols().map(c=>{const cell=g[c.k]?nf(g[c.k]):'<span class=muted>0</span>';return c.sub?`<td class="subcol">${cell}</td>`:`<td${c.red?' style="color:#dc2626;font-weight:700"':''}>${cell}</td>`;}).join('')+
     '</tr>';
   });
@@ -1904,15 +1912,15 @@ function renderTable(){
     `<td style="color:#0369a1;font-weight:600">${nf(tdoneS)}</td>`+
     `<td style="color:#0369a1">${pf(progresStrict(t))}%</td>`+
     `<td style="color:${tselS>=0?'#16a34a':'#dc2626'}">${tselS>=0?'+':''}${pf(tselS)}</td>`+
+    ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+     'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
+     'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'].map(k=>`<td>${nf(t[k])}</td>`).join('')+
     `<td>${nf(t.wsKel)}</td>`+
     `<td style="color:#15803d;font-weight:600">${nf(t.muKel)}</td>`+
     `<td>${pf(t.wsKel?t.muKel/t.wsKel*100:0)}%</td>`+
     `<td>${nf(t.wsUsh)}</td>`+
     `<td style="color:#0369a1;font-weight:600">${nf(t.muUsh)}</td>`+
     `<td>${pf(t.wsUsh?t.muUsh/t.wsUsh*100:0)}%</td>`+
-    ['muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk',
-     'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
-     'wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan'].map(k=>`<td>${nf(t[k])}</td>`).join('')+
     tabCols().map(c=>c.sub?`<td class="subcol">${nf(t[c.k])}</td>`:`<td${c.red?' style="color:#dc2626"':''}>${nf(t[c.k])}</td>`).join('')+'</tr>';
   document.getElementById('t-count').textContent=data.length+' baris ditampilkan';
 }
@@ -1920,15 +1928,15 @@ function exportCSV(){
   const dim=currentDim();
   const tgt=targetInfo().pct;
   const ctxLabels=(dim.ctx||[]).map(c=>c.l);
-  const wkDetailKeys=['muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk',
+  const wkDetailKeys=['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
     'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
-    'wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan'];
-  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['PersenOpen','SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft','TargetKeluargaWilkerstat','CapaianKeluargaMuatan','PersenCapaianKeluarga','TargetUsahaWilkerstat','CapaianUsahaMuatan','PersenCapaianUsaha']).concat(wkDetailKeys).concat(tabCols().map(c=>c.csv));
+    'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'];
+  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['PersenOpen','SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft']).concat(wkDetailKeys).concat(['TargetKeluargaWilkerstat','CapaianKeluargaMuatan','PersenCapaianKeluarga','TargetUsahaWilkerstat','CapaianUsahaMuatan','PersenCapaianUsaha']).concat(tabCols().map(c=>c.csv));
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
   data=sortGroups(data);
   const lines=[head.join(';')];
-  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);const pctOpen=g.total?g.open/g.total*100:0;const pctKel=g.wsKel?g.muKel/g.wsKel*100:0;const pctUsh=g.wsUsh?g.muUsh/g.wsUsh*100:0;lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([Math.round(pctOpen*10)/10,g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10,g.wsKel,g.muKel,Math.round(pctKel*10)/10,g.wsUsh,g.muUsh,Math.round(pctUsh*10)/10]).concat(wkDetailKeys.map(k=>g[k])).concat(tabCols().map(c=>g[c.k])).join(';'));});
+  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);const pctOpen=g.total?g.open/g.total*100:0;const pctKel=g.wsKel?g.muKel/g.wsKel*100:0;const pctUsh=g.wsUsh?g.muUsh/g.wsUsh*100:0;lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([Math.round(pctOpen*10)/10,g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10]).concat(wkDetailKeys.map(k=>g[k])).concat([g.wsKel,g.muKel,Math.round(pctKel*10)/10,g.wsUsh,g.muUsh,Math.round(pctUsh*10)/10]).concat(tabCols().map(c=>g[c.k])).join(';'));});
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap_'+dim.key+'_SE2026.csv';a.click();
   function csv(s){s=String(s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
