@@ -1841,7 +1841,7 @@ function renderTable(){
     .concat([{k:'done',l:'Selain Open'},{k:'progres',l:'% Progres'},{k:'vstarget',l:'vs Target ('+pf(tgt)+'%)'},
              {k:'doneStrict',l:'Selain Open & Draft'},{k:'progresStrict',l:'% Selain Open & Draft'},{k:'vstargetStrict',l:'vs Target (selain open & draft)'}])
     .concat([{k:'wkKk',l:'Wilkerstat KK'},{k:'wkBtt',l:'Wilkerstat BTT'},{k:'wkBttk',l:'Wilkerstat BTTK'},
-             {k:'wkBku',l:'Wilkerstat BKU'},{k:'wkNonUsh',l:'Wilkerstat BTT Non-Usaha'},{k:'wkMuatan',l:'Wilkerstat Muatan'}])
+             {k:'wkBku',l:'Wilkerstat BKU'},{k:'wkNonUsh',l:'Wilkerstat BTT Non-Usaha'},{k:'wsUsh',l:'Wilkerstat Usaha'},{k:'wkMuatan',l:'Wilkerstat Muatan'}])
     .concat([{k:'muUshDtm',l:'Usaha Ditemukan'},{k:'muUshBaru',l:'Usaha Baru'},{k:'muUshTutup',l:'Usaha Tutup'},
              {k:'muUshGanda',l:'Usaha Ganda'},{k:'muUshTdk',l:'Usaha Tdk Ditemukan'}])
     .concat([{k:'muKelDtm',l:'Keluarga Ditemukan'},{k:'muKelBaru',l:'Keluarga Baru'},{k:'muKelMng',l:'Keluarga Meninggal'},
@@ -1882,7 +1882,7 @@ function renderTable(){
       `<td style="color:#0369a1;font-weight:600">${nf(ds)}</td>`+
       `<td><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end"><div class="bar" style="width:60px"><span style="width:${Math.min(100,ps)}%;background:#0369a1"></span></div><b style="color:#0369a1">${pf(ps)}%</b></div></td>`+
       `<td style="color:${sels>=0?'#16a34a':'#dc2626'};font-weight:700;white-space:nowrap">${sels>=0?'✓ +':'⚠ '}${pf(sels)}</td>`+
-      ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+      ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wsUsh','wkMuatan',
        'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
        'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'].map(k=>`<td>${nf(g[k])}</td>`).join('')+
       `<td>${nf(g.wsKel)}</td>`+
@@ -1912,7 +1912,7 @@ function renderTable(){
     `<td style="color:#0369a1;font-weight:600">${nf(tdoneS)}</td>`+
     `<td style="color:#0369a1">${pf(progresStrict(t))}%</td>`+
     `<td style="color:${tselS>=0?'#16a34a':'#dc2626'}">${tselS>=0?'+':''}${pf(tselS)}</td>`+
-    ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+    ['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wsUsh','wkMuatan',
      'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
      'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'].map(k=>`<td>${nf(t[k])}</td>`).join('')+
     `<td>${nf(t.wsKel)}</td>`+
@@ -1928,7 +1928,7 @@ function exportCSV(){
   const dim=currentDim();
   const tgt=targetInfo().pct;
   const ctxLabels=(dim.ctx||[]).map(c=>c.l);
-  const wkDetailKeys=['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+  const wkDetailKeys=['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wsUsh','wkMuatan',
     'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
     'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTmu','muKelTdk'];
   const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['PersenOpen','SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft']).concat(wkDetailKeys).concat(['TargetKeluargaWilkerstat','CapaianKeluargaMuatan','PersenCapaianKeluarga','TargetUsahaWilkerstat','CapaianUsahaMuatan','PersenCapaianUsaha']).concat(tabCols().map(c=>c.csv));
