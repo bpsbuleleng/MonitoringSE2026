@@ -1055,7 +1055,7 @@ const TAB_DETAIL_KEYS = Object.values(TAB_BRK).reduce((a,arr)=>a.concat(arr.map(
 
 /* Target Wilkerstat (kk/btt, usaha) & Muatan/capaian resmi FASIH (usaha, keluarga)
    per sub-SLS -- dari export manual folder Muatan/ (lihat gen_data.py). */
-const MUATAN_KEYS = ['wsKel','wsUsh','st23Ush','wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
+const MUATAN_KEYS = ['wsKel','wsUsh','utpUsh','wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wkMuatan',
   'muKel','muUsh','muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTdk','muKelNr',
   'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk'];
 /* kolom tabulasi utk tabel/CSV: tiap TAB + rincian "lainnya" disisipkan setelahnya */
@@ -1168,7 +1168,7 @@ function renderWilkerstat(rows){
   const t=blank();rows.forEach(r=>add(t,r));
   const pKel=t.wsKel>0?t.muKel/t.wsKel*100:0;
   const pUsh=t.wsUsh>0?t.muUsh/t.wsUsh*100:0;
-  const pUshSt23=t.st23Ush>0?t.muUsh/t.st23Ush*100:0;
+  const pUshUtp=t.utpUsh>0?t.muUsh/t.utpUsh*100:0;
   const brk=items=>'<div class="brk">'+items.map(([lbl,v])=>`<div class="brk-row"><span>${lbl}</span><b>${nf(v)}</b></div>`).join('')+'</div>';
   const detailCard=(cls,lbl,val,valLbl,items)=>
     `<div class="kpi ${cls}"><div class="lbl">${lbl}</div>`+
@@ -1183,7 +1183,7 @@ function renderWilkerstat(rows){
     detailCard('k-i-slate','Target Wilkerstat',t.wkMuatan,'total muatan',[
       ['KK',t.wkKk],['BTT',t.wkBtt],['KK/BTT (target keluarga)',t.wsKel],['BTTK',t.wkBttk],
       ['BKU',t.wkBku],['BTT Non-Usaha',t.wkNonUsh],['Usaha (target usaha)',t.wsUsh],
-      ['Usaha (target ST2023+UMKM)',t.st23Ush],
+      ['Usaha (target UTP Subsektor Prelist)',t.utpUsh],
     ])+
     // 2) Detail capaian usaha (Ditemukan/Baru dari KESELURUHAN USAHA yg stabil;
     // Tutup/Ganda/Tdk Ditemukan dari USAHA PERUSAHAAN+USAHA KELUARGA, sheet
@@ -1200,7 +1200,7 @@ function renderWilkerstat(rows){
     ])+
     // 4) Perbandingan target vs capaian vs persentase
     cmpCard('k-tab-red','Usaha: Capaian vs Target Wilkerstat',t.wsUsh,t.muUsh,pUsh,'Wilkerstat')+
-    cmpCard('k-tab-red','Usaha: Capaian vs Target ST2023',t.st23Ush,t.muUsh,pUshSt23,'ST2023 + UMKM')+
+    cmpCard('k-tab-red','Usaha: Capaian vs Target UTP',t.utpUsh,t.muUsh,pUshUtp,'UTP Subsektor Prelist')+
     cmpCard('k-i-amber','Keluarga: Capaian vs Target Wilkerstat',t.wsKel,t.muKel,pKel,'Wilkerstat');
 }
 
@@ -1827,7 +1827,7 @@ function sortGroups(data){
     else if(sortKey==='subEffPct'){va=subEffPct(a);vb=subEffPct(b);}
     else if(sortKey==='pctKel'){va=a.wsKel>0?a.muKel/a.wsKel:0;vb=b.wsKel>0?b.muKel/b.wsKel:0;}
     else if(sortKey==='pctUsh'){va=a.wsUsh>0?a.muUsh/a.wsUsh:0;vb=b.wsUsh>0?b.muUsh/b.wsUsh:0;}
-    else if(sortKey==='pctUshSt23'){va=a.st23Ush>0?a.muUsh/a.st23Ush:0;vb=b.st23Ush>0?b.muUsh/b.st23Ush:0;}
+    else if(sortKey==='pctUshUtp'){va=a.utpUsh>0?a.muUsh/a.utpUsh:0;vb=b.utpUsh>0?b.muUsh/b.utpUsh:0;}
     else{va=a[sortKey];vb=b[sortKey];}
     return sortDir*(va-vb);
   });
@@ -1855,8 +1855,8 @@ function renderTable(){
              {k:'muKelElig',l:'Keluarga Tdk Eligible'},{k:'muKelTdk',l:'Keluarga Tdk Ditemukan'},
              {k:'muKelNr',l:'Keluarga Nonrespon'}])
     .concat([{k:'wsKel',l:'Target Keluarga (Wilkerstat)'},{k:'muKel',l:'Capaian Keluarga (Muatan)'},{k:'pctKel',l:'% Capaian Keluarga'},
-             {k:'wsUsh',l:'Target Usaha (Wilkerstat)'},{k:'st23Ush',l:'Target Usaha (ST2023+UMKM)'},
-             {k:'muUsh',l:'Capaian Usaha (Muatan)'},{k:'pctUsh',l:'% Capaian vs Wilkerstat'},{k:'pctUshSt23',l:'% Capaian vs ST2023'}])
+             {k:'wsUsh',l:'Target Usaha (Wilkerstat)'},{k:'utpUsh',l:'Target Usaha (UTP Subsektor Prelist)'},
+             {k:'muUsh',l:'Capaian Usaha (Muatan)'},{k:'pctUsh',l:'% Capaian vs Wilkerstat'},{k:'pctUshUtp',l:'% Capaian vs UTP'}])
     .concat(tabCols());
   const thead=document.querySelector('#rekap thead');
   thead.innerHTML='<tr>'+cols.map(c=>{
@@ -1898,10 +1898,10 @@ function renderTable(){
       `<td style="color:#15803d;font-weight:600">${nf(g.muKel)}</td>`+
       `<td>${pf(g.wsKel?g.muKel/g.wsKel*100:0)}%</td>`+
       `<td>${nf(g.wsUsh)}</td>`+
-      `<td>${nf(g.st23Ush)}</td>`+
+      `<td>${nf(g.utpUsh)}</td>`+
       `<td style="color:#0369a1;font-weight:600">${nf(g.muUsh)}</td>`+
       `<td>${pf(g.wsUsh?g.muUsh/g.wsUsh*100:0)}%</td>`+
-      `<td>${pf(g.st23Ush?g.muUsh/g.st23Ush*100:0)}%</td>`+
+      `<td>${pf(g.utpUsh?g.muUsh/g.utpUsh*100:0)}%</td>`+
       tabCols().map(c=>{const cell=g[c.k]?nf(g[c.k]):'<span class=muted>0</span>';return c.sub?`<td class="subcol">${cell}</td>`:`<td${c.red?' style="color:#dc2626;font-weight:700"':''}>${cell}</td>`;}).join('')+
     '</tr>';
   });
@@ -1930,10 +1930,10 @@ function renderTable(){
     `<td style="color:#15803d;font-weight:600">${nf(t.muKel)}</td>`+
     `<td>${pf(t.wsKel?t.muKel/t.wsKel*100:0)}%</td>`+
     `<td>${nf(t.wsUsh)}</td>`+
-    `<td>${nf(t.st23Ush)}</td>`+
+    `<td>${nf(t.utpUsh)}</td>`+
     `<td style="color:#0369a1;font-weight:600">${nf(t.muUsh)}</td>`+
     `<td>${pf(t.wsUsh?t.muUsh/t.wsUsh*100:0)}%</td>`+
-    `<td>${pf(t.st23Ush?t.muUsh/t.st23Ush*100:0)}%</td>`+
+    `<td>${pf(t.utpUsh?t.muUsh/t.utpUsh*100:0)}%</td>`+
     tabCols().map(c=>c.sub?`<td class="subcol">${nf(t[c.k])}</td>`:`<td${c.red?' style="color:#dc2626"':''}>${nf(t[c.k])}</td>`).join('')+'</tr>';
   document.getElementById('t-count').textContent=data.length+' baris ditampilkan';
 }
@@ -1944,12 +1944,12 @@ function exportCSV(){
   const wkDetailKeys=['wkKk','wkBtt','wkBttk','wkBku','wkNonUsh','wsUsh','wkMuatan',
     'muUshDtm','muUshBaru','muUshTutup','muUshGanda','muUshTdk',
     'muKelDtm','muKelBaru','muKelMng','muKelElig','muKelTdk','muKelNr'];
-  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['PersenOpen','SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft']).concat(wkDetailKeys).concat(['TargetKeluargaWilkerstat','CapaianKeluargaMuatan','PersenCapaianKeluarga','TargetUsahaWilkerstat','TargetUsahaST2023','CapaianUsahaMuatan','PersenCapaianUsaha','PersenCapaianVsST2023']).concat(tabCols().map(c=>c.csv));
+  const head=[dim.col].concat(ctxLabels).concat(['JumlahUnit','TotalAssignment']).concat(STATUS.map(s=>s.lbl)).concat(['PersenOpen','SelainOpen','ProgresPersen','TargetPersen','SelisihPoin','SelainOpenDraft','ProgresSelainOpenDraft','SelisihSelainOpenDraft']).concat(wkDetailKeys).concat(['TargetKeluargaWilkerstat','CapaianKeluargaMuatan','PersenCapaianKeluarga','TargetUsahaWilkerstat','TargetUsahaUTP','CapaianUsahaMuatan','PersenCapaianUsaha','PersenCapaianVsUTP']).concat(tabCols().map(c=>c.csv));
   let data=tableData.slice();
   if(tableQ){const q=tableQ.toLowerCase();data=data.filter(g=>g.label.toLowerCase().indexOf(q)>=0);}
   data=sortGroups(data);
   const lines=[head.join(';')];
-  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);const pctOpen=g.total?g.open/g.total*100:0;const pctKel=g.wsKel?g.muKel/g.wsKel*100:0;const pctUsh=g.wsUsh?g.muUsh/g.wsUsh*100:0;const pctUshSt23=g.st23Ush?g.muUsh/g.st23Ush*100:0;lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([Math.round(pctOpen*10)/10,g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10]).concat(wkDetailKeys.map(k=>g[k])).concat([g.wsKel,g.muKel,Math.round(pctKel*10)/10,g.wsUsh,g.st23Ush,g.muUsh,Math.round(pctUsh*10)/10,Math.round(pctUshSt23*10)/10]).concat(tabCols().map(c=>g[c.k])).join(';'));});
+  data.forEach(g=>{const p=progres(g);const ps=progresStrict(g);const ds=Math.max(0,g.total-g.open-g.draft);const pctOpen=g.total?g.open/g.total*100:0;const pctKel=g.wsKel?g.muKel/g.wsKel*100:0;const pctUsh=g.wsUsh?g.muUsh/g.wsUsh*100:0;const pctUshUtp=g.utpUsh?g.muUsh/g.utpUsh*100:0;lines.push([csv(g.label)].concat((dim.ctx||[]).map((c,i)=>csv((g.ctx&&g.ctx[i])||''))).concat([g.n,g.total]).concat(STATUS.map(s=>g[s.key])).concat([Math.round(pctOpen*10)/10,g.total-g.open,Math.round(p*10)/10,Math.round(tgt*10)/10,Math.round((p-tgt)*10)/10,ds,Math.round(ps*10)/10,Math.round((ps-tgt)*10)/10]).concat(wkDetailKeys.map(k=>g[k])).concat([g.wsKel,g.muKel,Math.round(pctKel*10)/10,g.wsUsh,g.utpUsh,g.muUsh,Math.round(pctUsh*10)/10,Math.round(pctUshUtp*10)/10]).concat(tabCols().map(c=>g[c.k])).join(';'));});
   const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='rekap_'+dim.key+'_SE2026.csv';a.click();
   function csv(s){s=String(s);return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
