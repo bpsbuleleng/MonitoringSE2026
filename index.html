@@ -1207,7 +1207,7 @@ function renderWilkerstat(rows){
     detailCard('k-i-green','Keluarga: Detail Capaian',t.muKel,'total capaian keluarga',[
       ['Ditemukan',t.muKelDtm],['Baru',t.muKelBaru],['Meninggal',t.muKelMng],
       ['Tidak Eligible',t.muKelElig],['Tidak Ditemukan',t.muKelTdk],
-      ['Nonrespon',t.muKelNr],
+      ['Tidak Dapat Ditemukan s.d. Akhir Pencacahan',t.muKelNr],
     ])+
     // 4) Perbandingan target vs capaian vs persentase
     cmpCard('k-tab-red','Usaha: Capaian vs Target Wilkerstat',t.wsUsh,muUshNonTani,pUsh,'Wilkerstat, di luar usaha pertanian')+
@@ -1866,7 +1866,7 @@ function renderTable(){
              {k:'muUshGanda',l:'Usaha Ganda'},{k:'muUshTdk',l:'Usaha Tdk Ditemukan'},{k:'muUshTani',l:'Usaha Pertanian (Capaian)'}])
     .concat([{k:'muKelDtm',l:'Keluarga Ditemukan'},{k:'muKelBaru',l:'Keluarga Baru'},{k:'muKelMng',l:'Keluarga Meninggal'},
              {k:'muKelElig',l:'Keluarga Tdk Eligible'},{k:'muKelTdk',l:'Keluarga Tdk Ditemukan'},
-             {k:'muKelNr',l:'Keluarga Nonrespon'}])
+             {k:'muKelNr',l:'Keluarga Tdk Ditemukan s.d. Akhir Pencacahan'}])
     .concat([{k:'wsKel',l:'Target Keluarga (Wilkerstat)'},{k:'muKel',l:'Capaian Keluarga (Muatan)'},{k:'pctKel',l:'% Capaian Keluarga'},
              {k:'wsUsh',l:'Target Usaha (Wilkerstat)'}]
              .concat(SHOW_UTP_TARGET?[{k:'utpUsh',l:'Target Usaha (UTP Subsektor Prelist)'}]:[])
