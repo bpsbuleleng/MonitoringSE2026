@@ -948,7 +948,7 @@ tfoot td.freeze{left:0;z-index:4;box-shadow:1px 0 0 var(--line)}
 
   <!-- SUDAH 100% TAPI BELUM DITANDAI SELESAI -->
   <div class="card panel" id="bt-card">
-    <div class="section-title">⚠️ Sudah 100% (Selain Open &amp; Draft) Tapi Belum Ditandai Selesai (FASIH)</div>
+    <div class="section-title">⚠️ Sudah Lewat Tahap PPL/PML Tapi Belum Ditandai Selesai (FASIH)</div>
     <div class="tbl-tools">
       <span class="count-note" id="bt-count"></span>
       <span style="flex:1"></span>
@@ -1403,7 +1403,13 @@ function ssExport(){
 let btData=[];
 function btCompute(){
   const rows=filteredRows();
-  return rows.filter(r=>r[idx.total]>0 && r[idx.open]===0 && r[idx.draft]===0 && r[idx.selesai]!==1).map(r=>({
+  // "Sudah 100%" = tidak ada lagi assignment yg masih di tahap Open/Draft/
+  // Submitted Responden/Submitted Pencacah/Rejected Pengawas (semua status
+  // yg masih "berjalan" di PPL/PML) -- sisanya (Approved Pengawas, Rejected/
+  // Revoked/Edited/Completed Admin dst) dianggap sudah lewat tahap itu.
+  return rows.filter(r=>r[idx.total]>0 && r[idx.open]===0 && r[idx.draft]===0 &&
+      r[idx.subResp]===0 && r[idx.subPencacah]===0 && r[idx.rejPengawas]===0 &&
+      r[idx.selesai]!==1).map(r=>({
     kdsub:r[idx.kdsub], nmsls:r[idx.nmsls], nmdesa:r[idx.nmdesa], nmkec:r[idx.nmkec],
     ppl:r[idx.ppl], pml:r[idx.pml], total:r[idx.total]
   })).sort((a,b)=>b.total-a.total);
