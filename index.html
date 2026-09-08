@@ -946,6 +946,17 @@ tfoot td.freeze{left:0;z-index:4;box-shadow:1px 0 0 var(--line)}
     <div class="table-scroll" style="max-height:480px"><table id="ss-table"><thead></thead><tbody></tbody></table></div>
   </div>
 
+  <!-- SUDAH 100% TAPI BELUM DITANDAI SELESAI -->
+  <div class="card panel" id="bt-card">
+    <div class="section-title">⚠️ Sudah 100% (Selain Open &amp; Draft) Tapi Belum Ditandai Selesai (FASIH)</div>
+    <div class="tbl-tools">
+      <span class="count-note" id="bt-count"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="bt-export">⬇ Export CSV</button>
+    </div>
+    <div class="table-scroll" style="max-height:480px"><table id="bt-table"><thead></thead><tbody></tbody></table></div>
+  </div>
+
   <!-- BELUM MULAI -->
   <div class="card panel">
     <div class="section-title">🚦 Belum Mulai — Petugas Tanpa Progres (semua tugas masih Open)</div>
@@ -1388,6 +1399,33 @@ function ssExport(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='selesai_'+ssDim+'_SE2026.csv';a.click();
 }
 
+/* ---- Sudah 100% (selain open & draft) tapi belum ditandai selesai di FASIH ---- */
+let btData=[];
+function btCompute(){
+  const rows=filteredRows();
+  return rows.filter(r=>r[idx.total]>0 && r[idx.open]===0 && r[idx.draft]===0 && r[idx.selesai]!==1).map(r=>({
+    kdsub:r[idx.kdsub], nmsls:r[idx.nmsls], nmdesa:r[idx.nmdesa], nmkec:r[idx.nmkec],
+    ppl:r[idx.ppl], pml:r[idx.pml], total:r[idx.total]
+  })).sort((a,b)=>b.total-a.total);
+}
+function renderBT(){
+  const card=document.getElementById('bt-card');
+  if(!SHOW_SELESAI_FASIH){ if(card) card.style.display='none'; return; }
+  if(card) card.style.display='';
+  btData=btCompute();
+  const th=document.querySelector('#bt-table thead'),tb=document.querySelector('#bt-table tbody');
+  th.innerHTML='<tr><th class="txt">SLS [sub]</th><th class="txt">Desa</th><th class="txt">Kecamatan</th><th class="txt">PPL</th><th class="txt">PML</th><th>Total</th></tr>';
+  const body=btData.map(g=>`<tr><td class="txt">${g.nmsls} [sub ${g.kdsub}]</td><td class="txt">${g.nmdesa}</td><td class="txt">${g.nmkec}</td><td class="txt">${g.ppl}</td><td class="txt">${g.pml}</td><td><b>${nf(g.total)}</b></td></tr>`).join('');
+  tb.innerHTML=btData.length?body:'<tr><td class="txt muted" colspan="6">Semua sub-SLS yang sudah 100% sudah ditandai selesai di FASIH. 🎉</td></tr>';
+  document.getElementById('bt-count').textContent=btData.length+' sub-SLS sudah 100% tapi belum ditandai selesai';
+}
+function btExport(){
+  const head=['SLS','Sub','Desa','Kecamatan','PPL','PML','Total'];
+  const lines=btData.map(g=>[csvv(g.nmsls),g.kdsub,csvv(g.nmdesa),csvv(g.nmkec),csvv(g.ppl),csvv(g.pml),g.total].join(';'));
+  const blob=new Blob(['﻿'+[head.join(';'),...lines].join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='belum_tandai_selesai_SE2026.csv';a.click();
+}
+
 /* ---- Belum Mulai (semua tugas masih Open; nonOpen = 0) ---- */
 function nonOpenSumRow(r){let s=0;STATUS.forEach(st=>{if(st.key!=='open')s+=r[idx[st.key]]||0;});return s;}
 const BM_DIMS=[{key:'ppl',lbl:'PPL Belum Mulai'},{key:'pml',lbl:'PML Belum Mulai'},{key:'sub',lbl:'Sub-SLS Belum Mulai'}];
@@ -1457,7 +1495,7 @@ function buildMxData(){
     g.subs.sort((a,b)=>a.kdsub-b.kdsub);
     g.subEff=g.subSel>0?g.subSel+(g.subMaxPartial/100):0;
   });
-  return Object.values(byPpl).sort((a,b)=>a.pml.localeCompare(b.pml,'id')||a.ppl.localeCompare(b.ppl,'id'));
+  return Object.values(byPpl).filter(g=>g.subSel>0).sort((a,b)=>a.pml.localeCompare(b.pml,'id')||a.ppl.localeCompare(b.ppl,'id'));
 }
 function renderMx(){
   const mxCard=document.getElementById('mx-card');
@@ -1475,7 +1513,7 @@ function renderMx(){
   for(let i=1;i<=maxSub;i++) head+=`<th style="min-width:80px">Sub ${i}</th>`;
   head+='</tr>';
   th.innerHTML=head;
-  if(!mxData.length){tb.innerHTML=`<tr><td class="txt muted" colspan="${8+maxSub}">Tidak ada data.</td></tr>`;return;}
+  if(!mxData.length){tb.innerHTML=`<tr><td class="txt muted" colspan="${8+maxSub}">Belum ada PPL dengan sub-SLS yang sudah ditandai selesai.</td></tr>`;return;}
   const ncols=8+maxSub;
   let h='';
   mxData.forEach(g=>{
@@ -2039,6 +2077,7 @@ function refreshAll(){
   refreshTable();
   renderBJ();
   renderSS();
+  renderBT();
   renderBM();
   renderMx();
   renderTrend();
@@ -2072,6 +2111,7 @@ function init(){
   document.getElementById('t-export').onclick=exportCSV;
   document.getElementById('bj-export').onclick=bjExport;
   document.getElementById('ss-export').onclick=ssExport;
+  document.getElementById('bt-export').onclick=btExport;
   document.getElementById('bm-export').onclick=bmExport;
   document.getElementById('mx-export').onclick=mxExport;
   document.querySelectorAll('#trend-view button').forEach(b=>b.onclick=()=>{trendView=b.dataset.v;document.querySelectorAll('#trend-view button').forEach(x=>x.classList.toggle('active',x===b));renderTrend();});
